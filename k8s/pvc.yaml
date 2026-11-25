@@ -1,0 +1,25 @@
+# local-path volumes live on the node's root disk (64 GB, shared with every other app).
+# local-path doesn't enforce these sizes; they're a note of what we expect to use.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-theater-media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-theater-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

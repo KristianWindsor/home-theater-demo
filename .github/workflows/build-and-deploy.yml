@@ -1,0 +1,55 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'k8s/**'
+  workflow_dispatch:
+
+# Only deploy the newest of several quick pushes
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: kristianwindsor/home-theater-demo
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The Dockerfile has RUN steps (apt-get), so the arm64 image needs emulation on this amd64 runner
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          username: kristianwindsor
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE }}:b${{ github.run_number }}
+            ${{ env.IMAGE }}:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to cluster
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          TAG: b${{ github.run_number }}
+        run: |
+          echo "$KUBE_CONFIG_DATA" | base64 -d > "$RUNNER_TEMP/kubeconfig"
+          export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
+          kubectl set image deployment/home-theater home-theater="$IMAGE:$TAG"
+          kubectl rollout status deployment/home-theater --timeout=5m

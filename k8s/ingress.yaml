@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: home-theater
+  annotations:
+    # Movies are streamed with Range requests; don't let nginx spool them to disk first
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: home-theater.kwk8s.tech
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: home-theater
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    - home-theater.kwk8s.tech
+    secretName: home-theater-cert

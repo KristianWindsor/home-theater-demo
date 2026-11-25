@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-theater
+  labels:
+    app: home-theater
+spec:
+  replicas: 1
+  # One writer for /data (analysis scores, thumbnails, scene edits): stop the old pod before starting the new one
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-theater
+  template:
+    metadata:
+      labels:
+        app: home-theater
+    spec:
+      imagePullSecrets:
+        - name: dockerhub
+      containers:
+        - name: home-theater
+          image: kristianwindsor/home-theater-demo:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ANALYZER_CONCURRENCY
+              value: "1"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              # the music analyzer (numpy) and ffmpeg spike while a song is being analyzed
+              memory: 2Gi
+          volumeMounts:
+            # demos/, movies/, music/: the app only reads these
+            - name: media
+              mountPath: /media
+              readOnly: true
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: home-theater-media
+        - name: data
+          persistentVolumeClaim:
+            claimName: home-theater-data

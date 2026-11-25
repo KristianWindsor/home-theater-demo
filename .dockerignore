@@ -1,0 +1,10 @@
+# Only what the Dockerfile copies. Media (movies, music, loose .flac files) never goes in the image.
+*
+!package.json
+!server
+!public
+!analyzer
+!scripts
+!config
+**/__pycache__
+**/.*
