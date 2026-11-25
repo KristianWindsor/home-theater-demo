@@ -37,7 +37,7 @@ class App {
     this.demo = null;
     this.hover = null;
     this.items = new Map();
-    this.library = { items: [], reels: [] };
+    this.library = { items: [] };
     this._viz = null;
   }
 

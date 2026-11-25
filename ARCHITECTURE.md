@@ -86,7 +86,7 @@ permission prompt.
 
 The player drives an `HTMLVideoElement`. A future "external player" target could send the same
 `{file, start, end}` instructions to Kodi (JSON-RPC) or another player on the theater PC, which *can*
-bitstream TrueHD Atmos / DTS:X to the receiver. Scenes, reels and the UI wouldn't change.
+bitstream TrueHD Atmos / DTS:X to the receiver. Scenes and the UI wouldn't change.
 
 ## Extension point 4: remote control
 

@@ -44,25 +44,51 @@ export function videoCard(item, onclick, auto = false) {
       h('div', { class: 'meta' }, [item.year, fmtTime(item.duration), item.scenes && item.scenes.length ? `${item.scenes.length} scenes` : null].filter(Boolean).join(' · '))));
 }
 
+// A frame a little way into the scene: the first second or two is often a black transition.
+function sceneThumbTime(s) {
+  const len = s.end !== null ? s.end - s.start : 60;
+  return s.start + Math.min(20, Math.max(1.5, len * 0.25));
+}
+
+/** One scene as a tile: click to play just that scene. */
+function sceneTile(item, s, i, { showMovie = false, autofocus = false } = {}) {
+  const app = ctx.app;
+  const has = s.start !== null;
+  const long = item.duration >= 3600;
+  return h('button', {
+    class: 'card scene',
+    'data-autofocus': autofocus || null,
+    onclick: () => (has ? app.router.go(`/play/${item.id}?scene=${i}`) : toast('This scene has no start time yet. Set one in Edit scenes or with B in the player.', 'warn')),
+  },
+  h('div', { class: 'thumb' },
+    has ? h('img', { src: api.thumb(item.id, sceneThumbTime(s), 640), alt: '', loading: 'lazy' }) : null,
+    s.star ? h('span', { class: 'star' }, icon('starFill')) : null,
+    h('span', { class: 'badge time' }, has ? `${fmtTime(s.start, long)}${s.end ? ` – ${fmtTime(s.end, long)}` : ''}` : 'no time yet')),
+  h('div', { class: 'body' },
+    h('div', { class: 'title' }, s.title),
+    showMovie ? h('div', { class: 'meta' }, item.title) : null,
+    s.note ? h('div', { class: 'note' }, s.note) : null));
+}
+
 export function movies(root) {
   const app = ctx.app;
   app.setMode('room');
   app.room.goTo('couch', 1.6);
   const vids = app.library.items.filter((i) => i.category === 'movies');
-  const reels = app.library.reels || [];
+  // Every starred scene, from every film, as its own tile
+  const starred = app.library.items.filter((i) => i.kind === 'video')
+    .flatMap((v) => (v.scenes || []).map((s, i) => ({ v, s, i })))
+    .filter(({ s }) => s.star && s.start !== null);
   const el = h('div', { class: 'screen scrim' },
     topbar('Movies'),
     h('div', { class: 'scroll' },
-      reels.length ? [
-        h('div', { class: 'section-title' }, 'Reels'),
-        h('div', { class: 'grid small' }, reels.map((r, i) => h('button', { class: 'card', onclick: () => app.router.go(`/play/reel:${r.id}`), 'data-autofocus': i === 0 || null },
-          h('div', { class: 'thumb' }, r.items[0] ? h('img', { src: api.thumb(r.items[0].id, (r.items[0].start || 0) + 2, 640), alt: '', loading: 'lazy' }) : null,
-            h('div', { class: 'badges' }, h('span', { class: 'badge gold' }, `${r.items.length} scenes`))),
-          h('div', { class: 'body' }, h('div', { class: 'title' }, r.title), h('div', { class: 'meta' }, r.description || 'Plays back to back'))))),
+      starred.length ? [
+        h('div', { class: 'section-title' }, 'Scenes'),
+        h('div', { class: 'scene-list' }, starred.map(({ v, s, i }, n) => sceneTile(v, s, i, { showMovie: true, autofocus: n === 0 }))),
       ] : null,
       h('div', { class: 'section-title' }, 'Movies'),
       vids.length
-        ? h('div', { class: 'grid' }, vids.map((v, i) => videoCard(v, () => app.router.go(`/movie/${v.id}`), !reels.length && i === 0)))
+        ? h('div', { class: 'grid' }, vids.map((v, i) => videoCard(v, () => app.router.go(`/movie/${v.id}`), !starred.length && i === 0)))
         : h('div', { class: 'empty' }, 'No movies yet. Put video files in ', h('code', {}, 'media/movies'),
           '. MKV and MP4 work; run ', h('code', {}, 'scripts/prepare_media.py'), ' on Blu-ray rips so their audio plays in a browser.')));
   root.appendChild(el);
@@ -118,7 +144,7 @@ export function movie(root, id) {
         !editing ? [
           h('div', { class: 'section-title' }, 'Scenes'),
           scenes.length
-            ? h('div', { class: 'scene-list' }, scenes.map((s, i) => sceneCard(s, i)))
+            ? h('div', { class: 'scene-list' }, scenes.map((s, i) => sceneTile(item, s, i)))
             : h('div', { class: 'empty' }, 'No scenes yet. Use ', h('b', {}, 'Edit scenes'), ' here, or press ', h('b', {}, 'B'),
               ' while watching to bookmark the current moment as a scene and ', h('b', {}, 'E'), ' to mark where it ends.'),
           p.chapters && p.chapters.length ? [
@@ -128,16 +154,6 @@ export function movie(root, id) {
           ] : null,
         ] : null));
     focusFirst(el);
-  }
-
-  function sceneCard(s, i) {
-    const has = s.start !== null;
-    return h('button', { class: 'card scene', onclick: () => (has ? app.router.go(`/play/${item.id}?scene=${i}`) : toast('This scene has no start time yet. Set one in Edit scenes or with B in the player.', 'warn')) },
-      h('div', { class: 'thumb' },
-        has ? h('img', { src: api.thumb(item.id, s.start + 1.5, 640), alt: '', loading: 'lazy' }) : null,
-        s.star ? h('span', { class: 'star' }, icon('starFill')) : null,
-        h('span', { class: 'badge time' }, has ? `${fmtTime(s.start, item.duration >= 3600)}${s.end ? ` – ${fmtTime(s.end, item.duration >= 3600)}` : ''}` : 'no time yet')),
-      h('div', { class: 'body' }, h('div', { class: 'title' }, s.title), s.note ? h('div', { class: 'note' }, s.note) : null));
   }
 
   function editor() {
@@ -157,7 +173,7 @@ export function movie(root, id) {
           h('div', { class: 'n' }, i + 1),
           h('input', { class: 'input', value: r.title, oninput: (e) => { r.title = e.target.value; } }),
           timeInput('start'), timeInput('end'),
-          h('button', { class: `btn btn-icon ${r.star ? 'active' : ''}`, title: 'Star (adds it to the Starred reel)', onclick: (e) => { r.star = !r.star; e.currentTarget.classList.toggle('active', r.star); } }, icon(r.star ? 'starFill' : 'star')),
+          h('button', { class: `btn btn-icon ${r.star ? 'active' : ''}`, title: 'Star (shows it under Scenes on the Movies page)', onclick: (e) => { r.star = !r.star; e.currentTarget.classList.toggle('active', r.star); } }, icon(r.star ? 'starFill' : 'star')),
           h('button', { class: 'btn btn-icon', title: 'Delete', onclick: () => { rows.splice(i, 1); drawRows(); } }, icon('trash')));
       }));
     };

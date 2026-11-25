@@ -1,18 +1,21 @@
 {
   "_comment": "Curated metadata, keyed by file name (or path relative to the category folder). Times can be seconds or h:mm:ss. Scenes with \"start\": null show up as 'no time yet': play the movie, press B at the right moment and the time is filled in (E sets the end). Scene edits made in the app are saved to DATA_DIR/scenes.json and win over this file.",
   "movies": {
-    "The Dark Knight (2008).mkv": {
+    "The Dark Knight (2008).mp4": {
       "title": "The Dark Knight",
       "year": 2008,
-      "description": "Example entry: rename the key to match your file. The scene names are here; set the times from the player with B / E.",
+      "description": "The whole film, with shortcuts to the big set pieces. Starred scenes are the loudest action with the biggest score moments. Times are frame-checked against the 2:32:12 release, where the title smoke starts at 0:00:43; if your copy's studio logos run longer or shorter, shift every time by the difference.",
       "scenes": [
-        { "title": "Opening bank heist", "start": null, "end": null, "star": true },
-        { "title": "Interrogation room", "start": null, "end": null },
-        { "title": "Hong Kong extraction", "start": null, "end": null },
-        { "title": "Armored truck chase and the Batpod", "start": null, "end": null, "star": true },
-        { "title": "Hospital explosion", "start": null, "end": null },
-        { "title": "The ferries", "start": null, "end": null },
-        { "title": "Prewitt Building finale", "start": null, "end": null }
+        { "title": "Opening bank heist", "start": "0:00:42", "end": "0:06:23", "star": true, "note": "From the bat logo in the smoke to the bus pulling away." },
+        { "title": "Parking garage: Scarecrow and the copycats", "start": "0:07:23", "end": "0:10:36" },
+        { "title": "Hong Kong extraction", "start": "0:34:00", "end": "0:37:49", "star": true, "note": "The jump from the IFC tower, the skyhook and the C-130, then Lau delivered to Gordon." },
+        { "title": "Armored truck chase and the Batpod", "start": "1:14:25", "end": "1:23:00", "star": true, "note": "Lower Fifth, the Tumbler crash, the Batpod and the truck flip." },
+        { "title": "Interrogation room", "start": "1:25:32", "end": "1:30:38" },
+        { "title": "Race to save Rachel", "start": "1:30:38", "end": "1:36:13" },
+        { "title": "Hospital explosion", "start": "1:51:52", "end": "1:52:54.5", "star": true, "note": "One minute, and the whole building comes down. A good subwoofer test." },
+        { "title": "The ferries", "start": "1:59:19", "end": "2:04:38" },
+        { "title": "Prewitt Building finale", "start": "2:04:38", "end": "2:15:22.5" },
+        { "title": "Ending: a dark knight", "start": "2:21:38", "end": "2:24:31", "star": true, "note": "Gordon's speech over the final chase, through the title card." }
       ]
     },
     "Countdown Test Film (2026).mp4": {
@@ -35,17 +38,5 @@
       "description": "Pink noise in each speaker in turn, as a video (AAC 5.1)."
     }
   },
-  "music": {},
-  "reels": [
-    {
-      "title": "Thrill Reel",
-      "description": "Best demo moments back to back. Edit config/catalog.json to build your own.",
-      "items": [
-        { "movie": "Countdown Test Film (2026).mp4", "scene": "Fly-around" },
-        { "movie": "Countdown Test Film (2026).mp4", "scene": "The drop" },
-        { "movie": "The Dark Knight (2008).mkv", "scene": "Opening bank heist" },
-        { "movie": "The Dark Knight (2008).mkv", "scene": "Armored truck chase and the Batpod" }
-      ]
-    }
-  ]
+  "music": {}
 }

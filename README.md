@@ -7,8 +7,8 @@ A home-theater showcase that runs in a browser on the machine connected to the T
   the TV for movies; click the couch to sit down. Speakers move and lights glow with the actual output levels.
 - **Demos**: built-in synthesized experiences (channel check, a helicopter orbiting the couch, a thunderstorm
   with lightning in the lights, a 120→18 Hz sub sweep) plus your own demo clips (Dolby/DTS trailers etc.).
-- **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, scene fades, and **reels**
-  (scenes from different films back to back). Mark scenes while watching with **B** (start) and **E** (end).
+- **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, scene fades, and your
+  starred scenes as tiles on the Movies page. Mark scenes while watching with **B** (start) and **E** (end).
 - **Music visualizer**: each song is analyzed once (beats, downbeats, drums, harmony, key, sections, builds,
   drops). The visuals are then **choreographed for the whole song**, like a pre-programmed light show, and
   rendered live in WebGL with the live spectrum layered on top. Unanalyzed tracks react live until their analysis
@@ -91,12 +91,12 @@ and tags are kept; text subtitles are written next to the file as `.vtt`; the MP
 seeking over the network is instant. Options: `--downmix 5.1` (fold 7.1 into 5.1), `--allow-dolby` (keep
 AC-3/E-AC-3 as-is, only Edge/Safari play those), `--dry-run`.
 
-## Scenes and reels
+## Scenes
 
 Scenes live in `config/catalog.json`, keyed by file name:
 
 ```json
-"The Dark Knight (2008).mkv": {
+"The Dark Knight (2008).mp4": {
   "title": "The Dark Knight",
   "scenes": [
     { "title": "Opening bank heist", "start": "0:00:45", "end": "0:06:10", "star": true },
@@ -110,11 +110,13 @@ Scenes live in `config/catalog.json`, keyed by file name:
   (the name is pre-filled) and **E** where it ends. That's the quickest way to build a scene list.
 - Scenes edited in the app (B/E in the player, or *Edit scenes* on a movie page) are saved on the server in
   `DATA_DIR/scenes.json` and override the catalog. *Revert to catalog* undoes that.
-- **Reels** (in `catalog.json`) play scenes from any films back to back with fades. Every starred scene also
-  goes into an automatic **Starred scenes** reel.
+- Starred scenes (`"star": true`, or the star in *Edit scenes*) show up as their own tiles under **Scenes** at
+  the top of the Movies page; click one to play just that scene. A movie's page lists all of its scenes and
+  has *Play all* to run them back to back.
 - MKV chapters are listed too, so you can jump around before you've curated anything.
 
-The shipped catalog has the scene *names* for The Dark Knight with empty times, ready for B/E.
+The shipped catalog has a frame-checked scene list for The Dark Knight, keyed `The Dark Knight (2008).mp4`:
+name your copy to match. If its studio logos run longer or shorter, shift the times (or fix them with B/E).
 
 ## The music visualizer
 
@@ -238,7 +240,7 @@ server/          zero-dependency Node server: library + ffprobe cache, byte-rang
                  thumbnails/covers, lossless fallbacks, scene saving, server-sent events
 analyzer/        the music analyzer (Python) and its tests
 scripts/         prepare_media.py, make_test_media.py, synth_song.py
-config/          catalog.json (scenes, reels), room.json (3D room)
+config/          catalog.json (scenes), room.json (3D room)
 public/js/
   core/          router, spatial navigation, API, settings, codec compatibility
   audio/         audio engine (per-speaker routing, meters, upmix), procedural sounds, demos, music player

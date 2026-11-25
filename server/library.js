@@ -25,7 +25,7 @@ function onChange(fn) {
 function loadCatalog() {
   const cat = readJSONFile(path.join(config.configDir, 'catalog.json'), null) ||
     readJSONFile(path.join(config.configDir, 'catalog.example.json'), {}) || {};
-  return { demos: cat.demos || {}, movies: cat.movies || {}, music: cat.music || {}, reels: cat.reels || [] };
+  return { demos: cat.demos || {}, movies: cat.movies || {}, music: cat.music || {} };
 }
 
 function loadRoom() {
@@ -223,42 +223,4 @@ function resetScenes(item) {
   return item.scenes;
 }
 
-/** Reels: curated lists from the catalog + an automatic reel of starred scenes. */
-function reels() {
-  const catalog = state.catalog || loadCatalog();
-  const videos = state.items.filter((i) => i.kind === 'video');
-  const findVideo = (ref) => videos.find((v) => v.file === ref || path.basename(v.file) === ref || v.title === ref);
-  const out = [];
-  for (const r of catalog.reels || []) {
-    const items = [];
-    for (const it of r.items || []) {
-      const v = findVideo(it.movie || it.demo || it.file);
-      if (!v) continue;
-      let start = parseTime(it.start);
-      let end = parseTime(it.end);
-      let title = it.title || v.title;
-      if (it.scene !== undefined) {
-        const sc = typeof it.scene === 'number' ? v.scenes[it.scene]
-          : v.scenes.find((s) => s.title.toLowerCase() === String(it.scene).toLowerCase());
-        if (sc) {
-          start = sc.start;
-          end = sc.end;
-          title = `${v.title} — ${sc.title}`;
-        }
-      }
-      if (start === null || start === undefined) continue;
-      items.push({ id: v.id, title, start, end });
-    }
-    if (items.length) out.push({ id: `reel-${out.length}`, title: r.title || 'Reel', description: r.description || '', items });
-  }
-  const starred = [];
-  for (const v of videos) {
-    for (const s of v.scenes || []) {
-      if (s.star && s.start !== null) starred.push({ id: v.id, title: `${v.title} — ${s.title}`, start: s.start, end: s.end });
-    }
-  }
-  if (starred.length) out.push({ id: 'reel-starred', title: 'Starred scenes', description: 'Every scene you starred, back to back.', items: starred, auto: true });
-  return out;
-}
-
-module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, reels, onChange, loadRoom, CATEGORIES };
+module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, onChange, loadRoom, CATEGORIES };

@@ -125,7 +125,6 @@ async function api(req, res, url) {
     const items = await library.ensureFresh();
     return sendJSON(req, res, 200, {
       items: items.map(publicItem),
-      reels: library.reels(),
       room: library.loadRoom(),
       server: { version: VERSION, sceneEdits: config.allowSceneEdits, analysis: analysis.stats() },
     });

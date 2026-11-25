@@ -1,4 +1,4 @@
-// Video player: scenes, reels, fades, bookmarking. Audio stays on the browser's native path.
+// Video player: scenes, play-all, fades, bookmarking. Audio stays on the browser's native path.
 import { h, icon, fmtTime, toast } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
@@ -8,21 +8,13 @@ import { checkVideo } from '../core/compat.js';
 const FADE_IN = 0.8;
 const FADE_OUT = 1.2;
 
+// queue: true = several entries that play back to back (Play all scenes)
 function buildPlaylist(app, arg, q) {
-  if (arg.startsWith('reel:')) {
-    const reel = (app.library.reels || []).find((r) => r.id === arg.slice(5));
-    if (!reel) return { list: [], title: 'Reel' };
-    return {
-      title: reel.title,
-      reel: true,
-      list: reel.items.map((it) => ({ item: app.items.get(it.id), start: it.start, end: it.end, title: it.title })).filter((e) => e.item),
-    };
-  }
   const item = app.items.get(arg);
   if (!item) return { list: [] };
   const scenes = (item.scenes || []).map((s, i) => ({ ...s, i })).filter((s) => s.start !== null);
   if (q.get('scenes') === 'all') {
-    return { title: item.title, reel: true, list: scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i })) };
+    return { title: item.title, queue: true, list: scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i })) };
   }
   if (q.get('scene') !== null) {
     const i = Number(q.get('scene'));
@@ -80,7 +72,7 @@ export function player(root, arg, q) {
         timeEl,
         h('div', { class: 'spacer' }),
         h('button', { class: 'btn small', onclick: () => bookmark(), title: 'Add a scene starting now (B)' }, icon('marker'), 'Mark scene'),
-        icon('volume'), vol,
+        icon('volume', 'vol-icon'), vol,
         h('button', { class: 'btn btn-icon', onclick: () => toggleFs(), 'aria-label': 'Fullscreen' }, icon('full')))));
   const el = h('div', { class: 'screen player' }, fade, spinner, overlay, endCard);
   root.appendChild(el);
@@ -154,7 +146,7 @@ export function player(root, arg, q) {
     entry = pl.list[i];
     ending = false;
     endCard.style.display = 'none';
-    titleEl.textContent = pl.reel ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
+    titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
     sceneEl.textContent = entry.title && entry.title !== entry.item.title ? entry.title : '';
     const fades = settings.sceneFades && (entry.start > 0 || entry.end);
     fade.style.transition = 'none';
@@ -186,8 +178,8 @@ export function player(root, arg, q) {
   async function finishScene() {
     if (ending) return;
     ending = true;
-    const auto = pl.reel || settings.sceneEnd === 'next';
-    if (settings.sceneEnd === 'continue' && !pl.reel) return;
+    const auto = pl.queue || settings.sceneEnd === 'next';
+    if (settings.sceneEnd === 'continue' && !pl.queue) return;
     fade.style.transition = `opacity ${FADE_OUT}s ease`;
     fade.style.opacity = 1;
     await rampVolume(0, FADE_OUT);
@@ -215,7 +207,7 @@ export function player(root, arg, q) {
   }
 
   function jumpScene(dir, fromEnd = false) {
-    if (pl.reel) {
+    if (pl.queue) {
       const j = idx + dir;
       if (j >= 0 && j < pl.list.length) load(j);
       return;
