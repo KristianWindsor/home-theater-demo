@@ -1,0 +1,264 @@
+'use strict';
+// Scans MEDIA_DIR/{demos,movies,music}, probes files (cached), merges curated metadata from
+// config/catalog.json and scene edits saved from the app (data/scenes.json).
+const fs = require('fs');
+const path = require('path');
+const config = require('./config');
+const { probe } = require('./probe');
+const { findSidecarImage } = require('./media');
+const { VIDEO_EXT, AUDIO_EXT, idFor, readJSONFile, writeJSONAtomic, parseTime, limiter } = require('./util');
+
+const CATEGORIES = ['demos', 'movies', 'music'];
+const probeCacheFile = () => path.join(config.dataDir, 'probe-cache.json');
+const scenesFile = () => path.join(config.dataDir, 'scenes.json');
+
+let state = { items: [], byId: new Map(), scannedAt: 0, scanning: null };
+let probeCache = null;
+const probeLimit = limiter(4);
+const listeners = new Set();
+
+function onChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function loadCatalog() {
+  const cat = readJSONFile(path.join(config.configDir, 'catalog.json'), null) ||
+    readJSONFile(path.join(config.configDir, 'catalog.example.json'), {}) || {};
+  return { demos: cat.demos || {}, movies: cat.movies || {}, music: cat.music || {}, reels: cat.reels || [] };
+}
+
+function loadRoom() {
+  return readJSONFile(path.join(config.configDir, 'room.json'), null);
+}
+
+function catalogEntry(catalog, category, rel) {
+  const table = catalog[category] || {};
+  return table[rel] || table[path.basename(rel)] || null;
+}
+
+function walk(dir, base = dir, out = []) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full, base, out);
+    else if (e.isFile() || e.isSymbolicLink()) out.push(path.relative(base, full));
+  }
+  return out;
+}
+
+function prettyTitle(rel) {
+  return path.basename(rel, path.extname(rel))
+    .replace(/[._]+/g, ' ')
+    .replace(/\s*\((19|20)\d\d\)\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function yearFrom(rel) {
+  const m = path.basename(rel).match(/\((19\d\d|20\d\d)\)/);
+  return m ? Number(m[1]) : null;
+}
+
+function normScenes(list, duration) {
+  if (!Array.isArray(list)) return [];
+  return list.map((s, i) => {
+    const start = parseTime(s.start);
+    let end = parseTime(s.end);
+    if (end !== null && start !== null && end <= start) end = null;
+    if (end !== null && duration) end = Math.min(end, duration);
+    return {
+      id: s.id || `s${i + 1}`,
+      title: String(s.title || `Scene ${i + 1}`).slice(0, 200),
+      start,
+      end,
+      note: s.note ? String(s.note).slice(0, 1000) : '',
+      star: !!s.star,
+    };
+  });
+}
+
+async function probeCached(category, rel, full, st) {
+  if (!probeCache) probeCache = readJSONFile(probeCacheFile(), {});
+  const key = `${category}/${rel}`;
+  const hit = probeCache[key];
+  if (hit && hit.size === st.size && hit.mtime === Math.floor(st.mtimeMs)) return hit.probe;
+  const info = await probeLimit(key, () => probe(full));
+  probeCache[key] = { size: st.size, mtime: Math.floor(st.mtimeMs), probe: info };
+  return info;
+}
+
+async function scan() {
+  if (state.scanning) return state.scanning;
+  state.scanning = (async () => {
+    const catalog = loadCatalog();
+    const edits = readJSONFile(scenesFile(), {});
+    const items = [];
+    const seen = new Set();
+    for (const category of CATEGORIES) {
+      const dir = path.join(config.mediaDir, category);
+      const files = walk(dir).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      for (const rel of files) {
+        const ext = path.extname(rel).toLowerCase();
+        const isVideo = VIDEO_EXT.has(ext);
+        const isAudio = AUDIO_EXT.has(ext);
+        if (!isVideo && !isAudio) continue;
+        if (category === 'music' && !isAudio) continue;
+        if (category === 'movies' && !isVideo) continue;
+        const full = path.join(dir, rel);
+        let st;
+        try {
+          st = fs.statSync(full);
+        } catch {
+          continue;
+        }
+        let info;
+        try {
+          info = await probeCached(category, rel, full, st);
+        } catch (e) {
+          console.warn(`[library] probe failed for ${category}/${rel}: ${e.message}`);
+          continue;
+        }
+        const key = `${category}/${rel}`;
+        seen.add(key);
+        const id = idFor(key);
+        const meta = catalogEntry(catalog, category, rel) || {};
+        const relUrl = rel.split(path.sep).map(encodeURIComponent).join('/');
+        const item = {
+          id,
+          category,
+          kind: isVideo ? 'video' : 'audio',
+          file: rel,
+          url: `/media/${category}/${relUrl}`,
+          size: st.size,
+          mtime: Math.floor(st.mtimeMs),
+          duration: info.duration,
+          probe: info,
+          title: meta.title || info.tags.title || prettyTitle(rel),
+          year: meta.year || yearFrom(rel) || info.tags.year || null,
+          description: meta.description || '',
+          tags: meta.tags || [],
+        };
+        if (isVideo) {
+          const editScenes = edits[key];
+          item.scenes = normScenes(editScenes || meta.scenes || [], info.duration);
+          item.scenesEdited = !!editScenes;
+          item.poster = `/api/poster/${id}`;
+        }
+        if (isAudio) {
+          item.artist = meta.artist || info.tags.artist || '';
+          item.album = meta.album || info.tags.album || (category === 'music' ? path.dirname(rel) : '') || '';
+          if (item.album === '.') item.album = '';
+          item.track = info.tags.track;
+          item.disc = info.tags.disc;
+          item.cover = info.hasCover || findSidecarImage(item) ? `/api/cover/${id}` : null;
+          item.scoreUrl = `/api/score/${id}`;
+          item.compatUrl = `/api/compat/${id}.flac`;
+        }
+        items.push(item);
+      }
+    }
+    // forget cache entries for files that disappeared
+    if (probeCache) {
+      for (const k of Object.keys(probeCache)) if (!seen.has(k)) delete probeCache[k];
+      try {
+        writeJSONAtomic(probeCacheFile(), probeCache);
+      } catch (e) {
+        console.warn(`[library] could not save probe cache: ${e.message}`);
+      }
+    }
+    const before = state.items.map((i) => `${i.id}:${i.mtime}:${i.size}`).join('|');
+    state.items = items;
+    state.byId = new Map(items.map((i) => [i.id, i]));
+    state.catalog = catalog;
+    state.scannedAt = Date.now();
+    const after = items.map((i) => `${i.id}:${i.mtime}:${i.size}`).join('|');
+    if (before !== after) for (const fn of listeners) fn(items);
+    return items;
+  })();
+  try {
+    return await state.scanning;
+  } finally {
+    state.scanning = null;
+  }
+}
+
+async function ensureFresh() {
+  if (!state.scannedAt) return scan();
+  if (Date.now() - state.scannedAt > config.rescanSeconds * 1000) scan().catch(() => {});
+  return state.items;
+}
+
+function get(id) {
+  return state.byId.get(id) || null;
+}
+
+function sceneKey(item) {
+  return `${item.category}/${item.file}`;
+}
+
+function saveScenes(item, scenes) {
+  const edits = readJSONFile(scenesFile(), {});
+  const clean = normScenes(scenes, item.duration).map((s, i) => ({ ...s, id: s.id || `s${i + 1}` }));
+  edits[sceneKey(item)] = clean;
+  writeJSONAtomic(scenesFile(), edits, true);
+  item.scenes = clean;
+  item.scenesEdited = true;
+  return clean;
+}
+
+function resetScenes(item) {
+  const edits = readJSONFile(scenesFile(), {});
+  delete edits[sceneKey(item)];
+  writeJSONAtomic(scenesFile(), edits, true);
+  const meta = catalogEntry(state.catalog || loadCatalog(), item.category, item.file) || {};
+  item.scenes = normScenes(meta.scenes || [], item.duration);
+  item.scenesEdited = false;
+  return item.scenes;
+}
+
+/** Reels: curated lists from the catalog + an automatic reel of starred scenes. */
+function reels() {
+  const catalog = state.catalog || loadCatalog();
+  const videos = state.items.filter((i) => i.kind === 'video');
+  const findVideo = (ref) => videos.find((v) => v.file === ref || path.basename(v.file) === ref || v.title === ref);
+  const out = [];
+  for (const r of catalog.reels || []) {
+    const items = [];
+    for (const it of r.items || []) {
+      const v = findVideo(it.movie || it.demo || it.file);
+      if (!v) continue;
+      let start = parseTime(it.start);
+      let end = parseTime(it.end);
+      let title = it.title || v.title;
+      if (it.scene !== undefined) {
+        const sc = typeof it.scene === 'number' ? v.scenes[it.scene]
+          : v.scenes.find((s) => s.title.toLowerCase() === String(it.scene).toLowerCase());
+        if (sc) {
+          start = sc.start;
+          end = sc.end;
+          title = `${v.title} — ${sc.title}`;
+        }
+      }
+      if (start === null || start === undefined) continue;
+      items.push({ id: v.id, title, start, end });
+    }
+    if (items.length) out.push({ id: `reel-${out.length}`, title: r.title || 'Reel', description: r.description || '', items });
+  }
+  const starred = [];
+  for (const v of videos) {
+    for (const s of v.scenes || []) {
+      if (s.star && s.start !== null) starred.push({ id: v.id, title: `${v.title} — ${s.title}`, start: s.start, end: s.end });
+    }
+  }
+  if (starred.length) out.push({ id: 'reel-starred', title: 'Starred scenes', description: 'Every scene you starred, back to back.', items: starred, auto: true });
+  return out;
+}
+
+module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, reels, onChange, loadRoom, CATEGORIES };

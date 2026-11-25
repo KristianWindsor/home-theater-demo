@@ -1,0 +1,14 @@
+# Media files (bring your own; see media/README.md)
+media/*
+!media/README.md
+
+# Runtime data (analysis scores, thumbnails, covers, FLAC fallbacks)
+data/
+
+# Dependencies and caches
+node_modules/
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store

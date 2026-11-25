@@ -1,0 +1,51 @@
+{
+  "_comment": "Curated metadata, keyed by file name (or path relative to the category folder). Times can be seconds or h:mm:ss. Scenes with \"start\": null show up as 'no time yet': play the movie, press B at the right moment and the time is filled in (E sets the end). Scene edits made in the app are saved to DATA_DIR/scenes.json and win over this file.",
+  "movies": {
+    "The Dark Knight (2008).mkv": {
+      "title": "The Dark Knight",
+      "year": 2008,
+      "description": "Example entry: rename the key to match your file. The scene names are here; set the times from the player with B / E.",
+      "scenes": [
+        { "title": "Opening bank heist", "start": null, "end": null, "star": true },
+        { "title": "Interrogation room", "start": null, "end": null },
+        { "title": "Hong Kong extraction", "start": null, "end": null },
+        { "title": "Armored truck chase and the Batpod", "start": null, "end": null, "star": true },
+        { "title": "Hospital explosion", "start": null, "end": null },
+        { "title": "The ferries", "start": null, "end": null },
+        { "title": "Prewitt Building finale", "start": null, "end": null }
+      ]
+    },
+    "Countdown Test Film (2026).mp4": {
+      "title": "Countdown Test Film",
+      "description": "Generated test film (scripts/make_test_media.py): the browser-ready copy with lossless FLAC 5.1.",
+      "scenes": [
+        { "title": "Fly-around", "start": "0:30", "end": "0:58", "note": "A sound circles the room: FL, FR, SR, SL." },
+        { "title": "The drop", "start": "1:02.4", "end": "1:33", "star": true },
+        { "title": "Second drop", "start": "1:56.6", "end": "2:27" }
+      ]
+    },
+    "Countdown Test Film (2026).mkv": {
+      "title": "Countdown Test Film (original MKV)",
+      "description": "The same film as a typical Blu-ray rip: TrueHD 5.1 default track, which browsers can't decode."
+    }
+  },
+  "demos": {
+    "Channel Identification 5.1.mp4": {
+      "title": "Channel Identification 5.1",
+      "description": "Pink noise in each speaker in turn, as a video (AAC 5.1)."
+    }
+  },
+  "music": {},
+  "reels": [
+    {
+      "title": "Thrill Reel",
+      "description": "Best demo moments back to back. Edit config/catalog.json to build your own.",
+      "items": [
+        { "movie": "Countdown Test Film (2026).mp4", "scene": "Fly-around" },
+        { "movie": "Countdown Test Film (2026).mp4", "scene": "The drop" },
+        { "movie": "The Dark Knight (2008).mkv", "scene": "Opening bank heist" },
+        { "movie": "The Dark Knight (2008).mkv", "scene": "Armored truck chase and the Batpod" }
+      ]
+    }
+  ]
+}

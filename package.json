@@ -1,0 +1,17 @@
+{
+  "name": "marquee",
+  "version": "1.0.0",
+  "description": "Home theater showcase: surround demos, movie scene launcher, choreographed music visualizer and a 3D room home screen.",
+  "private": true,
+  "license": "MIT",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test-media": "python3 scripts/make_test_media.py media",
+    "analyze": "python3 analyzer/analyze.py media/music --summary",
+    "test": "python3 analyzer/tests/test_analyzer.py && node --check server/index.js"
+  }
+}
