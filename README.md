@@ -71,7 +71,7 @@ Music is analyzed in the background, about 5–15 s per song on a modest CPU, on
 > **Volume, not image.** `docker-compose.yml` mounts `./media` into the container. Copying a movie library
 > into the image makes every build push tens or hundreds of GB of layers; with a mount, adding a film is just
 > copying a file. If you really want a self-contained image, add `COPY media/ /media/` to a derived Dockerfile
-> and remove `media` from `.dockerignore`.
+> and add `!media` to `.dockerignore`.
 
 ## Making movies browser-playable (losslessly)
 
@@ -213,6 +213,23 @@ MEDIA_DIR=./media DATA_DIR=./data node server/index.js
 python3 analyzer/analyze.py "media/music/Some Album/01 Song.flac" --summary   # inspect one analysis
 python3 analyzer/tests/test_analyzer.py                                       # accuracy tests
 ```
+
+## Deployment (https://home-theater.kwk8s.tech)
+
+Runs on the kwk8s k3s server (`k8s/`). Pushing to `main` builds the image and rolls it out (GitHub Actions);
+changes under `k8s/` are applied by hand with `kubectl apply -f k8s/`.
+
+Media isn't in git or the image. It lives in the public S3 bucket `kwk8s-home-theater-files`, laid out like
+`media/` (`demos/`, `movies/`, `music/`). When the pod starts, an init container syncs the bucket onto the media
+volume, so adding or removing files is:
+
+```bash
+aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md   # add --delete to remove files too
+kubectl rollout restart deployment/home-theater                         # pulls only what changed
+```
+
+The bucket is the source of truth: files deleted from it are deleted from the server on the next restart.
+New songs are analyzed on the server after the restart.
 
 ## Layout
 

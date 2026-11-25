@@ -19,6 +19,29 @@ spec:
     spec:
       imagePullSecrets:
         - name: dockerhub
+      initContainers:
+        # Pull demos/, movies/, music/ from the public media bucket onto the media volume.
+        # The bucket is the source of truth (--delete); only new or changed files are downloaded.
+        # If S3 can't be reached, start anyway with whatever is already on the volume.
+        - name: media-sync
+          image: amazon/aws-cli:2.42.3
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              aws s3 sync "s3://$MEDIA_BUCKET/" /media/ --delete --no-sign-request --region us-west-1 --no-progress
+              || echo "media sync failed; starting with what is already on the volume"
+          env:
+            - name: MEDIA_BUCKET
+              value: kwk8s-home-theater-files
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: media
+              mountPath: /media
       containers:
         - name: home-theater
           image: kristianwindsor/home-theater-demo:latest
