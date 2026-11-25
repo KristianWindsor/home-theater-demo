@@ -226,8 +226,8 @@ Media isn't in git or the image. It lives in the public S3 bucket `kwk8s-home-th
 volume, so adding or removing files is:
 
 ```bash
-aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md   # add --delete to remove files too
-kubectl rollout restart deployment/home-theater                         # pulls only what changed
+aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md --exclude '*.DS_Store'   # add --delete to remove files too
+kubectl rollout restart deployment/home-theater                                             # pulls only what changed
 ```
 
 The bucket is the source of truth: files deleted from it are deleted from the server on the next restart.

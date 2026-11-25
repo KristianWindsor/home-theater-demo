@@ -92,16 +92,28 @@ async function makeThumb(item, t, width, out) {
   const src = mediaPath(item);
   const scale = `scale=${width}:-2:flags=lanczos`;
   const tmp = `${out}.${process.pid}.tmp.jpg`;
-  const args = (vf) => ['-v', 'error', '-nostdin', '-y', '-ss', String(Math.max(0, t)), '-i', src, '-map', '0:v:0',
-    '-frames:v', '1', '-vf', vf, '-q:v', '4', '-f', 'image2', tmp];
+  // keyOnly: decode only keyframes and take the first one at or after t. An exact frame can mean decoding
+  // seconds of 4K HEVC from the previous keyframe, which takes close to a minute on a one-core server.
+  const args = (vf, keyOnly) => ['-v', 'error', '-nostdin', '-y', ...(keyOnly ? ['-skip_frame', 'nokey'] : []),
+    '-ss', String(Math.max(0, t)), '-i', src, '-map', '0:v:0', '-frames:v', '1', '-vf', vf, '-q:v', '4', '-f', 'image2', tmp];
   const hdr = item.probe.video && item.probe.video.hdr;
-  try {
-    await run(config.ffmpeg, args((hdr ? HDR_TONEMAP : '') + scale), { timeoutMs: 45000 });
-  } catch (e) {
-    if (!hdr) throw e; // zscale missing in this ffmpeg build: fall back to an untonemapped frame
-    await run(config.ffmpeg, args(scale), { timeoutMs: 45000 });
+  const filters = hdr ? [HDR_TONEMAP + scale, scale] : [scale]; // zscale may be missing in this ffmpeg build
+  let err = new Error('no frame');
+  // Exact frame only as a fallback, e.g. when no keyframe follows t (the last seconds of a file)
+  for (const keyOnly of [true, false]) {
+    for (const vf of filters) {
+      try {
+        await run(config.ffmpeg, args(vf, keyOnly), { timeoutMs: keyOnly ? 45000 : 120000 });
+        if (exists(tmp)) {
+          fs.renameSync(tmp, out);
+          return;
+        }
+      } catch (e) {
+        err = e;
+      }
+    }
   }
-  fs.renameSync(tmp, out);
+  throw err;
 }
 
 /** GET /api/thumb/:id?t=seconds&w=width */
