@@ -18,7 +18,8 @@ export function experience(root, id) {
   const loadBar = h('div', { class: 'xp-load-fill' });
   const loadText = h('div', { class: 'xp-load-text' }, 'Composing');
   const load = h('div', { class: 'xp-load' }, h('div', { class: 'xp-load-track' }, loadBar), loadText);
-  const title = h('div', { class: 'xp-title' }, h('div', { class: 'xp-t1' }, def.title), h('div', { class: 'xp-t2' }, def.tagline), load);
+  const title = h('div', { class: 'xp-title' }, h('div', { class: 'xp-t1' }, def.title), h('div', { class: 'xp-t2' }, def.tagline), load,
+    h('div', { class: 'xp-rotate' }, 'Turn your phone sideways for the full picture'));
   const chapter = h('div', { class: 'xp-chapter' });
   const time = h('span', { class: 'mono muted' });
   const fill = h('div', { class: 'fill' });
@@ -50,7 +51,9 @@ export function experience(root, id) {
       }
     }, 2600);
   };
+  // a mouse reveals the controls by moving; a finger by tapping anywhere (hidden controls ignore that tap)
   el.addEventListener('pointermove', showUi);
+  el.addEventListener('pointerdown', showUi, true);
   showUi();
 
   function leave() {

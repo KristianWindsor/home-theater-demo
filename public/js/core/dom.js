@@ -61,6 +61,9 @@ const P = {
   'xp-marble-eventually': '<circle cx="6" cy="5" r="1.6"/><path d="M3 9l9 3M21 11l-8 4M4 18l8 1.5M14 19.5h6"/><path d="M17 3v5M15.5 8h3" /><circle cx="17" cy="9.6" r="1.3"/><path d="M8 13l.8 3.5"/>',
 };
 
+/** Phones and tablets (no mouse): touch wording, tap-to-reveal controls, no 5.1 advice. */
+export const TOUCH_ONLY = typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches;
+
 export function icon(name, cls = '') {
   const span = document.createElement('span');
   span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="${cls}" aria-hidden="true">${P[name] || ''}</svg>`;

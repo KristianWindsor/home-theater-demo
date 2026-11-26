@@ -54,8 +54,8 @@ export function music(root) {
     h('div', { class: 'topbar' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),
       h('h1', {}, 'Music'), h('div', { class: 'spacer' }),
-      tracks.length ? h('button', { class: 'btn', onclick: () => play(tracks, 0) }, icon('play'), 'Play all') : null,
-      tracks.length ? h('button', { class: 'btn', onclick: () => play(shuffled(), 0) }, icon('shuffle'), 'Shuffle') : null),
+      tracks.length ? h('button', { class: 'btn', onclick: () => play(tracks, 0) }, icon('play'), h('span', { class: 'lbl' }, 'Play all')) : null,
+      tracks.length ? h('button', { class: 'btn', onclick: () => play(shuffled(), 0) }, icon('shuffle'), h('span', { class: 'lbl' }, 'Shuffle')) : null),
     h('div', { class: 'scroll' },
       tracks.length ? [...albums.entries()].map(([key, list]) => {
         const [artist, album] = key.split('\u0000');

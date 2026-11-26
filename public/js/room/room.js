@@ -2,7 +2,7 @@
 // Built from config/room.json so it can be matched to the real room.
 import { Program, Target, FULLSCREEN_VS, drawFullscreen } from '../gl/gl.js';
 import { Post } from '../gl/post.js';
-import { m4, v3, clamp, lerp, easeInOut } from '../gl/math.js';
+import { m4, v3, clamp, lerp, easeInOut, fitFov } from '../gl/math.js';
 import { roundedBox, cylinder, speakerCone, torus, plane, quad } from './meshes.js';
 
 const MAX_LIGHTS = 16;
@@ -588,7 +588,7 @@ export class Room {
     const sh = this.shake;
     const tgt = v3.add(o ? o.target : this.cam.target, [(Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, 0]);
     const view = m4.lookAt(eye, tgt, o && o.up ? o.up : [0, 1, 0]);
-    const proj = m4.perspective(o && o.fov ? o.fov : 0.75, w / h, 0.05, o && o.far ? o.far : 60);
+    const proj = m4.perspective(fitFov(o && o.fov ? o.fov : 0.75, w / h), w / h, 0.05, o && o.far ? o.far : 60);
     return { vp: m4.multiply(proj, view), eye, view, target: tgt, proj };
   }
 

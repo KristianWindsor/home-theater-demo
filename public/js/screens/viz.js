@@ -56,9 +56,17 @@ export function viz(root, id) {
       }
     }, 3200);
   };
+  // a mouse reveals the controls by moving; a finger by tapping. A tap that only woke them doesn't also pause
+  let woke = false;
   el.addEventListener('pointermove', showUi);
+  el.addEventListener('pointerdown', (e) => {
+    woke = e.pointerType !== 'mouse' && el.classList.contains('idle');
+    showUi();
+  }, true);
   el.addEventListener('click', (e) => {
-    if (e.target === el || e.target.classList.contains('v-overlay')) m.toggle();
+    if (e.target !== el && !e.target.classList.contains('v-overlay')) return;
+    if (woke) woke = false;
+    else m.toggle();
   });
   showUi();
 

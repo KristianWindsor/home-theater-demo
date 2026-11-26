@@ -125,3 +125,12 @@ export function hashString(s) {
   }
   return h >>> 0;
 }
+
+/**
+ * Vertical field of view for a screen of this aspect: on tall (portrait) screens it widens towards what a landscape
+ * screen of aspect `ref` would show across, up to `max` radians, so the scene doesn't shrink to a sliver.
+ */
+export function fitFov(fov, aspect, ref = 1.5, max = 1.45) {
+  if (!(aspect > 0) || aspect >= ref) return fov;
+  return Math.max(fov, Math.min(max, 2 * Math.atan((Math.tan(fov / 2) * ref) / aspect)));
+}

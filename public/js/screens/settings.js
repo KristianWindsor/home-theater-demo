@@ -1,5 +1,5 @@
 // Settings & system check: speakers, sync, visuals, playback, library, browser capabilities.
-import { h, icon, toast } from '../core/dom.js';
+import { h, icon, toast, TOUCH_ONLY } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
 import { settings, setSetting } from '../core/settings.js';
@@ -40,7 +40,7 @@ export function settingsScreen(root) {
     h('h3', {}, 'Speakers'),
     row('Output', eng.ready ? `${eng.channels} channels reported by the browser` : 'Starts after the first click',
       h('span', { class: `badge ${eng.ready && eng.channels >= 6 ? 'ok' : 'warn'}` }, eng.ready ? eng.layoutName : 'not started')),
-    eng.ready && eng.channels < 6 ? h('div', { class: 'help' }, 'Per-speaker sounds need the OS playback device set to 5.1 (Windows: Sound settings → the HDMI/receiver device → Configure → 5.1). Reload the page afterwards. Movies are unaffected: they always play their own channels.') : null,
+    eng.ready && eng.channels < 6 && !TOUCH_ONLY ? h('div', { class: 'help' }, 'Per-speaker sounds need the OS playback device set to 5.1 (Windows: Sound settings → the HDMI/receiver device → Configure → 5.1). Reload the page afterwards. Movies are unaffected: they always play their own channels.') : null,
     h('div', { class: 'speaker-grid' }, speakers.map((s) => h('button', { class: 'btn', onclick: () => {
       if (!app.synth) return toast('Click Enter first.', 'warn');
       app.synth.play(s.role, s.role === 'LFE' ? 'lfeRumble' : 'pinkBurst', { dur: 1.5 });

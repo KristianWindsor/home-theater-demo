@@ -86,9 +86,18 @@ export function player(root, arg, q) {
       else if (!video.paused && document.activeElement && !overlay.contains(document.activeElement)) el.classList.add('idle');
     }, 3000);
   };
+  // a mouse reveals the controls by moving; a finger by tapping. A tap that only woke the controls doesn't
+  // also pause the film (hidden controls ignore taps, see .idle in the CSS)
+  let woke = false;
   el.addEventListener('pointermove', showUi);
+  el.addEventListener('pointerdown', (e) => {
+    woke = e.pointerType !== 'mouse' && el.classList.contains('idle');
+    showUi();
+  }, true);
   el.addEventListener('click', (e) => {
-    if (e.target === el || e.target === overlay) toggle();
+    if (e.target !== el && e.target !== overlay) return;
+    if (woke) woke = false;
+    else toggle();
   });
 
   const onEvent = {
@@ -235,7 +244,8 @@ export function player(root, arg, q) {
 
   function toggleFs() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else document.documentElement.requestFullscreen().catch(() => {});
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iPhone: only the native video player goes fullscreen
   }
 
   async function saveScenes(scenes, msg) {

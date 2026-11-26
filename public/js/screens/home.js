@@ -1,5 +1,5 @@
 // Home: the 3D theater. Click speakers to hear them alone, the TV for movies, the couch to sit.
-import { h, icon } from '../core/dom.js';
+import { h, icon, TOUCH_ONLY } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
 import { settings } from '../core/settings.js';
@@ -24,7 +24,9 @@ export function home(root) {
   const el = h('div', { class: 'screen home' },
     h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'MARQUEE'),
       h('div', { class: 'room-name' }, (app.library.room && app.library.room.name) || 'Home Theater')),
-    h('div', { class: 'room-hint' }, 'Click a speaker to hear it alone', h('br'), 'Drag to look around · click the couch to sit'),
+    h('div', { class: 'room-hint' }, TOUCH_ONLY
+      ? ['Tap a speaker to hear it alone', h('br'), 'Drag to look around · tap the couch to sit']
+      : ['Click a speaker to hear it alone', h('br'), 'Drag to look around · click the couch to sit']),
     tag, banner, nowPlaying, dock, xpPill,
   );
   root.appendChild(el);
@@ -54,10 +56,11 @@ export function home(root) {
   };
   unsubs.push(app.on('experience', bindXp));
   bindXp(app.experience);
-  el.addEventListener('pointermove', showPill);
+  for (const ev of ['pointermove', 'pointerdown']) document.addEventListener(ev, showPill, true);
   unsubs.push(() => {
     for (const u of xpUnsub) u();
     clearTimeout(pillTimer);
+    for (const ev of ['pointermove', 'pointerdown']) document.removeEventListener(ev, showPill, true);
   });
 
   // floating label over hovered / clicked objects

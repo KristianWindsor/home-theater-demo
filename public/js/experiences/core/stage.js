@@ -2,7 +2,7 @@
 // post chain, a camera helper and sensible defaults for lights.
 import { Target } from '../../gl/gl.js';
 import { Post } from '../../gl/post.js';
-import { m4, v3 } from '../../gl/math.js';
+import { m4, v3, fitFov } from '../../gl/math.js';
 import { settings } from '../../core/settings.js';
 
 export class StageScene {
@@ -19,6 +19,7 @@ export class StageScene {
 
   /** View/projection for an eye looking at a target, with optional roll (radians). */
   camera(eye, target, fov, w, h, { roll = 0, near = 0.03, far = 400 } = {}) {
+    fov = fitFov(fov, w / h, 1.6, 1.35); // portrait phones see more than a sliver of the scene
     const fwd = v3.norm(v3.sub(target, eye));
     let up = [0, 1, 0];
     if (roll) {

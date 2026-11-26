@@ -11,7 +11,7 @@ import { api, events } from './core/api.js';
 import { settings, onSetting } from './core/settings.js';
 import { Router } from './core/router.js';
 import { installNav } from './core/nav.js';
-import { toast } from './core/dom.js';
+import { toast, TOUCH_ONLY } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
 import { ExperienceRunner } from './experiences/core/runner.js';
@@ -118,7 +118,7 @@ class App {
     }
     document.getElementById('splash').classList.add('hide');
     this.router.start();
-    if (this.engine.ready && this.engine.channels < 6) {
+    if (this.engine.ready && this.engine.channels < 6 && !TOUCH_ONLY) {
       setTimeout(() => toast(`This browser is outputting ${this.engine.layoutName}. For per-speaker sound set the playback device to 5.1 in the OS sound settings, then reload.`, 'warn', 9000), 1500);
     }
   }
