@@ -33,12 +33,19 @@ export class AudioEngine {
     return !!this.ctx;
   }
 
-  /** Must be called from a user gesture the first time (autoplay rules). */
+  /**
+   * Must be called from a user gesture the first time (autoplay rules). Creates the context synchronously, so
+   * callers can start media in the same gesture before awaiting it.
+   */
   async init() {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') await this.ctx.resume();
+      if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') await this.ctx.resume().catch(() => {});
       return this;
     }
+    // iOS: a "playback" audio session plays through the silent switch, like a music app (Safari 17+)
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch { /* not supported */ }
     const ctx = new AudioContext({ latencyHint: 'playback' });
     this.ctx = ctx;
     const dest = ctx.destination;
@@ -84,6 +91,12 @@ export class AudioEngine {
     ctx.onstatechange = () => this._emit();
     this._emit();
     return this;
+  }
+
+  /** Resume a suspended or interrupted context. Call from user gestures (it's cheap when already running). */
+  unlock() {
+    const ctx = this.ctx;
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {});
   }
 
   on(fn) {

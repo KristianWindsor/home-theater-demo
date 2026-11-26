@@ -4,6 +4,7 @@ import { canPlayAudioFile } from '../core/compat.js';
 import { Score, ScoreSource } from '../viz/score.js';
 import { LiveSource } from '../viz/live.js';
 import { settings } from '../core/settings.js';
+import { toast } from '../core/dom.js';
 
 export class MusicPlayer {
   constructor(app) {
@@ -76,7 +77,9 @@ export class MusicPlayer {
 
   async load(item, autoplay = true) {
     const app = this.app;
-    await app.engine.init();
+    // start the context but don't wait for it: Safari only lets media start inside the tap that asked for it,
+    // and awaiting first can end that gesture (the song then stays silent)
+    const ready = app.engine.init();
     this.item = item;
     this.usingCompat = !canPlayAudioFile(item);
     this.el.src = this.usingCompat ? item.compatUrl : item.url;
@@ -87,8 +90,20 @@ export class MusicPlayer {
     this.source = this.live;
     app.viz().setSource(this.live, item.title);
     this._emit('track');
-    if (autoplay) this.el.play().catch((e) => console.warn('[music] play()', e));
+    if (autoplay) this._play();
+    await ready;
     await this._loadScore(item);
+  }
+
+  _play() {
+    this.app.engine.unlock();
+    this.el.play().catch((e) => {
+      if (e && e.name === 'NotAllowedError') {
+        // the browser wants a fresh tap before it makes sound
+        toast('Tap play to start the music.', 'warn', 5000);
+        this._emit('pause');
+      } else if (e && e.name !== 'AbortError') console.warn('[music] play()', e);
+    });
   }
 
   async _loadScore(item) {
@@ -120,7 +135,7 @@ export class MusicPlayer {
 
   toggle() {
     if (!this.item) return;
-    if (this.el.paused) this.el.play().catch(() => {});
+    if (this.el.paused) this._play();
     else this.el.pause();
   }
 

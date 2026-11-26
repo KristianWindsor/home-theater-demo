@@ -103,6 +103,12 @@ class App {
     try {
       await this.engine.init();
       this.synth = new Synth(this.engine);
+      if (!this._unlockBound) {
+        this._unlockBound = true;
+        const unlock = () => this.engine.unlock();
+        for (const ev of ['pointerup', 'touchend', 'click', 'keydown']) document.addEventListener(ev, unlock, true);
+        document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && unlock());
+      }
     } catch (e) {
       console.error('[audio]', e);
       toast('Audio could not start in this browser.', 'bad');
