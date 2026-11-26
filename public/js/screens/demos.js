@@ -16,7 +16,6 @@ function demoCard({ icon: ic, title, line, duration, where, run }, first) {
 }
 
 const ICONS = { 'channel-check': 'surround', orbit: 'orbit', storm: 'storm', 'lfe-sweep': 'sub' };
-const SHOW_DEMOS = ['orbit', 'storm']; // short built-in pieces sit with the shows; the rest are setup tools
 
 const section = (title, sub) => h('div', { class: 'section-head' }, h('div', { class: 'section-title' }, title), sub ? h('div', { class: 'section-sub' }, sub) : null);
 
@@ -30,9 +29,9 @@ export function demos(root) {
   const builtin = (d) => ({ icon: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration, where: 'In the room', run: () => app.runDemo(d.id) });
   const shows = [
     ...EXPERIENCES.map((x) => ({ icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
-    ...BUILTIN_DEMOS.filter((d) => SHOW_DEMOS.includes(d.id)).map(builtin),
+    ...BUILTIN_DEMOS.filter((d) => d.show).map(builtin), // short built-in pieces sit with the shows
   ];
-  const setup = BUILTIN_DEMOS.filter((d) => !SHOW_DEMOS.includes(d.id)).map(builtin);
+  const setup = BUILTIN_DEMOS.filter((d) => !d.show).map(builtin);
   const el = h('div', { class: 'screen scrim' },
     h('div', { class: 'topbar' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),

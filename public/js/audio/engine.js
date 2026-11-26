@@ -2,10 +2,14 @@
 //
 // Movies and demo videos play through the browser's native media path (no Web Audio), so their
 // multichannel audio reaches the OS/receiver exactly as the browser decodes it.
-// Music, test signals and the room's easter eggs go through here, which lets us:
+// Music, shows, test signals and the room's easter eggs go through here, which lets us:
 //   * address individual speakers (channel merger -> discrete output channels)
 //   * meter every output channel (the 3D room's woofers move with real levels)
 //   * tap the music for the visualizer's live FFT
+//
+//   music ──────────────────────────────────────────────┐
+//   shows (experiences; Orbit, Thunderstorm)  ── show bus ┼─► master (Volume) ─► output
+//   speaker clicks, tests ─────────────────────── fx bus ─┘
 
 // Chrome/Windows channel order for multichannel output devices
 const ORDER = {
@@ -64,10 +68,15 @@ export class AudioEngine {
     this.master.channelCountMode = 'max';
     this.master.channelInterpretation = 'discrete';
     this.master.connect(dest);
-    // per-speaker bus
-    this.merger = ctx.createChannelMerger(this.channels);
-    this.merger.connect(this.master);
+    // level buses: each has a per-speaker merger and one gain, so a level change is one smooth ramp
+    this.buses = {
+      fx: this._bus(this.settings.fxLevel ?? 0.5),     // speaker clicks, Channel Check, Subwoofer Sweep, test tones
+      show: this._bus(this.settings.showLevel ?? 1),   // the composed experiences, Orbit, Thunderstorm
+    };
+    /** Where an experience's rendered channels go (already one channel per output). */
+    this.showInput = this.buses.show.gain;
     this.speakers = {};
+    this.musicChannels = 2;
     // meters on the final output
     this.splitter = ctx.createChannelSplitter(this.channels);
     this.master.connect(this.splitter);
@@ -91,6 +100,18 @@ export class AudioEngine {
     ctx.onstatechange = () => this._emit();
     this._emit();
     return this;
+  }
+
+  _bus(level) {
+    const ctx = this.ctx;
+    const merger = ctx.createChannelMerger(this.channels);
+    const gain = ctx.createGain();
+    gain.gain.value = level;
+    gain.channelCount = this.channels;
+    gain.channelCountMode = 'explicit';
+    gain.channelInterpretation = 'discrete';
+    merger.connect(gain).connect(this.master);
+    return { merger, gain };
   }
 
   /** Resume a suspended or interrupted context. Call from user gestures (it's cheap when already running). */
@@ -129,10 +150,15 @@ export class AudioEngine {
    * A mono input node whose sound comes out of one speaker only. On devices without that
    * channel it falls back sensibly (center -> phantom center, surrounds -> same-side front,
    * LFE -> low-passed into the fronts) and reports `virtual: true`.
+   * bus: 'fx' (speaker clicks and tests) or 'show' (the built-in shows).
    */
-  speaker(role) {
-    if (this.speakers[role]) return this.speakers[role];
+  speaker(role, bus = 'fx') {
+    const key = `${bus}:${role}`;
+    if (this.speakers[key]) return this.speakers[key];
     const ctx = this.ctx;
+    const merger = this.buses[bus].merger;
+    // the built-in shows were mixed for the old shared level's 50% default; on the show bus 100% plays them as before
+    const trim = bus === 'show' ? 0.5 : 1;
     const input = ctx.createGain();
     input.channelCount = 1;
     input.channelCountMode = 'explicit';
@@ -140,9 +166,9 @@ export class AudioEngine {
     const ch = this.channelOf(role);
     const send = (node, index, gain = 1) => {
       const gg = ctx.createGain();
-      gg.gain.value = gain * (this.settings.fxLevel ?? 0.5);
+      gg.gain.value = gain * trim;
       node.connect(gg);
-      gg.connect(this.merger, 0, index);
+      gg.connect(merger, 0, index);
     };
     if (ch >= 0) {
       send(input, ch);
@@ -165,13 +191,25 @@ export class AudioEngine {
         send(input, this.channelOf('SR') >= 0 ? this.channelOf('SR') : fr, 1);
       }
     }
-    this.speakers[role] = out;
+    this.speakers[key] = out;
     return out;
+  }
+
+  /** The engine as seen by a built-in demo: same API, but its speakers feed the given bus. */
+  onBus(bus) {
+    const view = Object.create(this);
+    view.speaker = (role) => this.speaker(role, bus);
+    return view;
   }
 
   setFxLevel(v) {
     this.settings.fxLevel = v;
-    this.speakers = {}; // rebuilt lazily with the new level
+    if (this.buses) this.buses.fx.gain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
+  }
+
+  setShowLevel(v) {
+    this.settings.showLevel = v;
+    if (this.buses) this.buses.show.gain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
   }
 
   setVolume(v) {
@@ -191,27 +229,74 @@ export class AudioEngine {
     return this.musicAnalyser;
   }
 
+  /** How many channels the current music file has (from the library's ffprobe data); re-routes if it changed. */
+  setMusicChannels(n) {
+    const c = Number.isFinite(n) && n > 0 ? Math.round(n) : 2;
+    if (c === this.musicChannels) return;
+    this.musicChannels = c;
+    if (this.musicNode) this._routeMusic(this.musicNode);
+  }
+
+  /**
+   * Music to the speakers:
+   *   surround files (5.1, 7.1...)  every channel to its own speaker, as mastered (the upmix never touches them)
+   *   stereo                        to the fronts as mastered, or upmixed to all speakers when that's switched on
+   *   mono                          to both fronts (or the phantom-center anchor of the upmix)
+   */
   _routeMusic(node) {
-    if (this._upmix) {
-      for (const n of this._upmix) n.disconnect();
-      this._upmix = null;
+    for (const n of this._musicRoute || []) {
+      try { n.disconnect(); } catch { /* already */ }
     }
-    try { node.disconnect(this.musicGain); } catch { /* not connected yet */ }
+    const route = (this._musicRoute = []);
+    const keep = (n) => (route.push(n), n);
+    try { node.disconnect(); } catch { /* not connected yet */ }
+    node.connect(this.musicAnalyser);
     this.musicNode = node;
+    const ctx = this.ctx;
+    const src = this.musicChannels || 2;
+    if (src > 2) {
+      const roles = { 4: ['FL', 'FR', 'SL', 'SR'], 6: ['FL', 'FR', 'FC', 'LFE', 'SL', 'SR'], 8: ['FL', 'FR', 'FC', 'LFE', 'BL', 'BR', 'SL', 'SR'] }[src]; // FLAC/WAV channel order
+      if (!roles || this.channels < 6) {
+        // fewer speakers than channels (or an unusual layout): the browser's standard down-mix handles it
+        node.connect(this.musicGain);
+        return;
+      }
+      // channel by channel to the speaker that role belongs to (handles 7.1 devices' channel order too)
+      const split = keep(ctx.createChannelSplitter(src));
+      const merge = keep(ctx.createChannelMerger(this.channels));
+      node.connect(split);
+      roles.forEach((role, i) => {
+        const ch = this.channelOf(role);
+        if (ch >= 0) split.connect(merge, i, ch);
+      });
+      merge.connect(this.musicGain);
+      return;
+    }
+    // mono or stereo: as a stereo pair (a mono file plays from both fronts, not just the left)
+    const pair = keep(ctx.createGain());
+    pair.channelCount = 2;
+    pair.channelCountMode = 'explicit';
+    pair.channelInterpretation = 'speakers';
+    node.connect(pair);
     const wantUpmix = this.settings.upmix && this.channels >= 6;
     if (!wantUpmix) {
-      node.connect(this.musicGain);
+      pair.connect(this.musicGain);
       return;
     }
     // Passive-matrix style upmix: fronts as mastered, a high-passed phantom-center anchor,
     // decorrelated difference signal to the surrounds, low-passed sum to the LFE.
-    const ctx = this.ctx;
-    const split = ctx.createChannelSplitter(2);
-    const merge = ctx.createChannelMerger(this.channels);
-    node.connect(split);
+    const split = keep(ctx.createChannelSplitter(2));
+    const merge = keep(ctx.createChannelMerger(this.channels));
+    pair.connect(split);
     const g = (v) => {
-      const x = ctx.createGain();
+      const x = keep(ctx.createGain());
       x.gain.value = v;
+      return x;
+    };
+    const filter = (type, f) => {
+      const x = keep(ctx.createBiquadFilter());
+      x.type = type;
+      x.frequency.value = f;
       return x;
     };
     const L = g(1), R = g(1);
@@ -222,34 +307,20 @@ export class AudioEngine {
     const sum = g(0.5);
     L.connect(sum);
     R.connect(sum);
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 150;
-    const cg = g(0.55);
-    sum.connect(hp).connect(cg).connect(merge, 0, this.channelOf('FC'));
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 100;
-    sum.connect(lp).connect(g(0.8)).connect(merge, 0, this.channelOf('LFE'));
-    const diffL = g(0.5), diffR = g(-0.5);
-    L.connect(diffL);
-    R.connect(diffR);
+    sum.connect(filter('highpass', 150)).connect(g(0.55)).connect(merge, 0, this.channelOf('FC'));
+    sum.connect(filter('lowpass', 100)).connect(g(0.8)).connect(merge, 0, this.channelOf('LFE'));
     const diff = g(1);
-    diffL.connect(diff);
-    diffR.connect(diff);
-    const sLp = ctx.createBiquadFilter();
-    sLp.type = 'lowpass';
-    sLp.frequency.value = 7000;
+    L.connect(g(0.5)).connect(diff);
+    R.connect(g(-0.5)).connect(diff);
+    const sLp = filter('lowpass', 7000);
     diff.connect(sLp);
-    const dl = ctx.createDelay(0.05);
+    const dl = keep(ctx.createDelay(0.05));
     dl.delayTime.value = 0.012;
-    const dr = ctx.createDelay(0.05);
+    const dr = keep(ctx.createDelay(0.05));
     dr.delayTime.value = 0.017;
-    const inv = g(-1);
     sLp.connect(dl).connect(g(0.8)).connect(merge, 0, this.channelOf('SL'));
-    sLp.connect(inv).connect(dr).connect(g(0.8)).connect(merge, 0, this.channelOf('SR'));
+    sLp.connect(g(-1)).connect(dr).connect(g(0.8)).connect(merge, 0, this.channelOf('SR'));
     merge.connect(this.musicGain);
-    this._upmix = [split, merge];
   }
 
   setUpmix(on) {

@@ -143,6 +143,8 @@ room, the picture and the Hue lights, so they can't drift apart.
   which is the quickest way to check that sound behind you really comes from behind you.
 - **LFE** is written 10 dB down on the LFE channel (the film convention; the receiver adds the 10 dB back).
 - **Lights**: the pieces drive the light rig (the virtual Hue lights in the 3D room) with their own cues.
+- **Levels**: *Settings → Shows level* sets all the shows (100% plays them as composed); *Speaker clicks & tests*
+  is separate, for the room's speaker clicks, Channel Check and Subwoofer Sweep.
 - **Controls**: Esc/Backspace or the back button stops; the timeline shows chapters; if the TV delays the
   picture, *Settings → A/V offset* shifts the visuals.
 - **Hear a mix without the TV**: `node scripts/render_experience.mjs marble-eventually` writes exactly what the

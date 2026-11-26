@@ -84,6 +84,8 @@ export class MusicPlayer {
     this.usingCompat = !canPlayAudioFile(item);
     this.el.src = this.usingCompat ? item.compatUrl : item.url;
     this.el.currentTime = 0;
+    const a0 = item.probe && item.probe.audio && item.probe.audio[0];
+    app.engine.setMusicChannels(a0 && a0.channels ? a0.channels : 2);
     const analyser = app.engine.attachMusic(this.el);
     app.viz().setAnalyser(analyser);
     this.live = new LiveSource(analyser);

@@ -47,8 +47,9 @@ export function settingsScreen(root) {
       app.room.setActivity(s.id, 1);
     } }, `${s.label}`))),
     h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => app.runDemo('channel-check') }, icon('surround'), 'Run channel check in the room')),
-    row('Volume', 'Master level for music and test signals', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
-    row('Easter egg level', 'Speaker clicks, demos and test tones', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+    row('Volume', 'Master level for music, shows and tests', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+    row('Shows level', 'The experiences, Orbit and Thunderstorm. 100% plays them as composed', ...slider('showLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+    row('Speaker clicks & tests', 'Tapping speakers in the room, Channel Check, Subwoofer Sweep and these test buttons', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     eng.ready && eng.channels === 8 ? row('Surround speakers on a 7.1 output', 'Where the 4 and 8 o’clock towers are wired', seg('surroundMap', [['side', 'Side'], ['back', 'Back']])) : null,
   );
 
@@ -115,7 +116,7 @@ export function settingsScreen(root) {
 
   const playbackPanel = h('div', { class: 'panel' },
     h('h3', {}, 'Playback'),
-    row('Stereo music on all speakers', 'Upmixes stereo to 5.1 (center anchor, ambience to the surrounds, bass to the sub). Off plays music exactly as mastered.',
+    row('Stereo music on all speakers', 'Upmixes stereo to 5.1 (center anchor, ambience to the surrounds, bass to the sub). Off plays stereo exactly as mastered; surround music always plays as mastered.',
       toggle('upmix')),
     row('Fade scenes in and out', '', toggle('sceneFades')),
     row('When a scene ends', '', seg('sceneEnd', [['stop', 'Stop'], ['next', 'Next scene'], ['continue', 'Keep playing']])),

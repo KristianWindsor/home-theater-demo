@@ -89,6 +89,7 @@ class App {
       if (k === 'volume' && this.engine.ready) this.engine.setVolume(v);
       if (k === 'upmix' && this.engine.ready) this.engine.setUpmix(v);
       if (k === 'fxLevel' && this.engine.ready) this.engine.setFxLevel(v);
+      if (k === 'showLevel' && this.engine.ready) this.engine.setShowLevel(v);
       if (k === 'surroundMap' && this.engine.ready) this.engine.speakers = {};
     });
     this._input();
@@ -377,7 +378,8 @@ class App {
       // banner that often swapped its Stop button out from under the user's finger
       if (status.text !== before) this.emit('demo', status);
     };
-    this.demo = { def, ctl: def.run({ engine: this.engine, synth: this.synth, emit, roles, ring }), status };
+    const engine = def.show ? this.engine.onBus('show') : this.engine; // shows play at the Shows level
+    this.demo = { def, ctl: def.run({ engine, synth: this.synth, emit, roles, ring }), status };
     this.rig.setMode('ambient');
     this.emit('demo', status);
     if (!this.router.current || this.router.current.name !== 'home') this.router.go('/');

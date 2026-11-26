@@ -66,12 +66,12 @@ export class ExperienceRunner {
     this.scene = new sceneMod.Scene(app, this.score, this);
     if (this.scene.init) await this.scene.init();
     if (this.state === 'stopped') return;
-    // output bus: discrete channels straight into the master
+    // output bus: discrete channels into the shows bus (Settings → Shows level), then the master
     this.bus = ctx.createGain();
     this.bus.channelCount = eng.channels;
     this.bus.channelCountMode = 'explicit';
     this.bus.channelInterpretation = 'discrete';
-    this.bus.connect(eng.master);
+    this.bus.connect(eng.showInput || eng.master);
     this.deviceRoles = this._deviceRoles();
     this.worker = new Worker(new URL('../audio/worker.js', import.meta.url), { type: 'module' });
     this.worker.onmessage = (e) => this._msg(e.data);

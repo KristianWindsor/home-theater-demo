@@ -114,7 +114,7 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
         ─► LFE bus (LR4 low-pass at 110 Hz, written −10 dB) ─► 6 role channels FL FR FC LFE SL SR
         ─► fold-down matrix to the device layout ─► linked look-ahead limiter
   chunks (transferable Float32Arrays, credit-based back-pressure)
-        ─► AudioBufferSourceNodes ─► engine bus (discrete channels) ─► OS ─► receiver
+        ─► AudioBufferSourceNodes ─► engine show bus (Shows level; discrete channels) ─► master ─► OS ─► receiver
                                                     scene.draw(t) on the audio clock · scene.light(fixture, t)
 ```
 

@@ -4,7 +4,8 @@ const KEY = 'marquee.settings.v1';
 
 export const DEFAULTS = {
   volume: 1,
-  fxLevel: 0.5,            // easter eggs / test signals (0..1)
+  fxLevel: 0.5,            // speaker clicks, Channel Check, Subwoofer Sweep, test tones (0..1)
+  showLevel: 1,            // the shows: composed experiences, Orbit, Thunderstorm (1 = as composed)
   quality: 'auto',         // auto | high | medium | low
   trip: 1,                 // visual intensity (0.5 .. 1.5)
   reduceFlashing: false,

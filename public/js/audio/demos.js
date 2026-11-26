@@ -16,6 +16,7 @@ export const BUILTIN_DEMOS = [
     title: 'Orbit',
     blurb: 'A helicopter circles the couch',
     duration: 32,
+    show: true, // listed with the shows and played at the Shows level
     run: orbit,
   },
   {
@@ -23,6 +24,7 @@ export const BUILTIN_DEMOS = [
     title: 'Thunderstorm',
     blurb: 'Rain all around, thunder from the sub',
     duration: 70,
+    show: true,
     run: storm,
   },
   {
