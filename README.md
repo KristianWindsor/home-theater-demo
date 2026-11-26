@@ -5,7 +5,7 @@ A home-theater showcase that runs in a browser on the machine connected to the T
 - **3D home screen**: a model of the room (couch, four towers, center, the subwoofer, the TV, the Hue
   lights). Click a speaker and a sound plays from **only that speaker**; click the sub for a sub drop; click
   the TV for movies; click the couch to sit down. Speakers move and lights glow with the actual output levels.
-- **Demos**: *Shows* (five composed surround experiences where the music, where each sound sits in the room,
+- **Demos**: *Shows* (seven composed surround experiences where the music, where each sound sits in the room,
   the picture and the lights all come from one score, plus a helicopter orbiting the couch and a thunderstorm
   with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips
   (Dolby/DTS trailers etc.). See [Experiences](#experiences).
@@ -136,9 +136,15 @@ room, the picture and the Hue lights, so they can't drift apart.
 | **Under the Ice** · 2:08 | A frozen lake creaks; a fracture races from the front-right speaker to behind your left shoulder; something the size of the room passes underneath on the sub; a whale calls and is answered from around the room; the deep lights up. |
 | **Lighthouse** · 2:12 | Waves around the seats, a lighthouse signalling from the center speaker into silence. Then an answer from behind you, then many; the lights become a constellation and the horizon rises with a choir. |
 | **Marble Machine** · 1:44 | A machine drawn in light around your seat. The marble rolls off the right edge of the screen and you hear it circle behind you; every pendulum, xylophone, string, drum and glass wheel it touches keeps playing, so it composes the groove. A tube fires it over your head into a spiral around the room, it taps one tiny button, and the vast machine around the room wakes for one enormous chord. |
+| **Cold Start** · 2:30 | A dim pit garage. The tubes flicker on, a relay clicks behind your right shoulder, the fuel pump primes, the starter struggles and a V10 catches with a cold-start flare that shakes the light fittings. Two blips (pops, a bang), the roller door rises onto a night circuit, launch control at the pit exit, then the drive: shifts, rev-matched downshifts, kerbs, a tunnel at full throttle. Then you're standing by the track as it comes at you at 270 km/h, screams past and brakes behind you. Back in the garage: engine off, fans, cooling metal ticking in the silence. |
+| **The Passenger** · 1:41 · in the 3D room | A collar bell behind the couch, soft paws, a jump: a cat appears on the backrest, hops down onto the empty seat beside you, kneads, turns around twice and curls up. Its purr (felt in the subwoofer) carries it into a dream: the walls drift away and enormous strands of wool float through warm amber light. One ear twitches, the dream is gone, and it asks you a question. *(Click the sleeping cat.)* |
 
 - **Every sound is synthesized** (plucked and bowed strings, struck glass, wood and metal, voices, waves, ice,
-  whale song, the rolling marble): no samples, nothing downloaded, nothing to license. When a piece starts, a
+  whale song, the rolling marble): no samples, nothing downloaded, nothing to license. The car is a physical
+  model of a V10 (ten cylinders firing in the real order through each bank's exhaust pipes, intake, valvetrain,
+  pops, shifts) driven by a lap simulation, heard from the cockpit or from the trackside with real propagation
+  delay (so real Doppler); the cat's purr is ~23 laryngeal pulses a second through inhale and exhale, with its
+  fundamental sent to the subwoofer. When a piece starts, a
   background worker renders the soundtrack for *your* speaker angles from `config/room.json` (it runs several
   times faster than real time) and streams it while it plays.
 - **Discrete 5.1.** With the OS device set to 5.1 (see above) every channel goes to its own speaker and the

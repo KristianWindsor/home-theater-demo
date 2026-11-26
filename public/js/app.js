@@ -275,6 +275,13 @@ class App {
         if (p) this.activate(p.id);
       }
     });
+    // experiences can react to a click too (The Passenger: the sleeping cat)
+    c.addEventListener('pointerup', (e) => {
+      const xp = this.experience;
+      if (!xp || xp.state !== 'playing' || !xp.scene || !xp.scene.onClick) return;
+      const [x, y] = ndc(e);
+      xp.scene.onClick(x, y);
+    });
     c.addEventListener('wheel', (e) => {
       if (!active()) return;
       e.preventDefault();

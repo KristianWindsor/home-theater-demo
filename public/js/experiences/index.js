@@ -40,6 +40,28 @@ export const EXPERIENCES = [
     duration: 104,
     kind: 'stage',
   },
+  {
+    id: 'cold-start',
+    title: 'Cold Start',
+    tagline: 'A V10 wakes up, then takes the night',
+    duration: 150,
+    kind: 'stage',
+  },
+  {
+    id: 'the-passenger',
+    title: 'The Passenger',
+    tagline: 'A cat takes the empty seat, and dreams',
+    duration: 101,
+    kind: 'room',
+  },
+  {
+    id: 'purr-rev',
+    title: 'Purr / Rev',
+    tagline: 'A purr that becomes an engine, and back',
+    duration: 40,
+    kind: 'room',
+    hidden: true, // an easter egg: click the sleeping cat in The Passenger
+  },
 ];
 
 export const EXPERIENCE_BY_ID = Object.fromEntries(EXPERIENCES.map((e) => [e.id, e]));

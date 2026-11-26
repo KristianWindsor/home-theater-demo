@@ -59,6 +59,9 @@ const P = {
   'xp-beneath-the-ice': '<path d="M2 7h20"/><path d="M17 7l-3 4 1 3-4 3-2 4M14 11l3 2M11 17l-3-1"/><path d="M3 16c3 2 6 3 9 2.5s5-1.5 7-1" stroke-dasharray="1.5 2"/><circle cx="6" cy="10" r="0.6"/><circle cx="9" cy="12.5" r="0.5"/>',
   'xp-last-lighthouse': '<path d="M10 20l1-11h2l1 11M9.5 9h5M11 6.5h2V9h-2zM12 5v1.5"/><path d="M13.5 7.5L22 4M10.5 7.5L2 4" stroke-dasharray="1.2 1.6"/><path d="M2 20c2-1 3 1 5 0s3 1 5 0 3 1 5 0 3 1 5 0"/><circle cx="20" cy="15" r="0.7"/>',
   'xp-marble-eventually': '<circle cx="6" cy="5" r="1.6"/><path d="M3 9l9 3M21 11l-8 4M4 18l8 1.5M14 19.5h6"/><path d="M17 3v5M15.5 8h3" /><circle cx="17" cy="9.6" r="1.3"/><path d="M8 13l.8 3.5"/>',
+  'xp-cold-start': '<path d="M4.6 17.5a8 8 0 1114.8 0"/><path d="M12 6.2v1.6M7.3 8.4l1.1 1.1M16.7 8.4l-1.1 1.1M5.3 12.9h1.6M17.1 12.9h1.6"/><path d="M12 15.2l4.2-4"/><circle cx="12" cy="15.2" r="1.1"/><path d="M8.5 20.5h7"/>',
+  'xp-the-passenger': '<path d="M4.5 20c0-5 3.3-8.3 7.5-8.3s7.5 3.3 7.5 8.3z"/><circle cx="12" cy="8.6" r="3.1"/><path d="M9.5 6.9L9.1 4.3l2.1 1.5M14.5 6.9l.4-2.6-2.1 1.5"/><path d="M19.5 20c1.6-.4 2.2-2.1 1.2-3.6"/><path d="M10.6 8.8h.01M13.4 8.8h.01"/>',
+  'xp-purr-rev': '<circle cx="12" cy="13" r="7.5"/><path d="M12 13l3.5-3.5M8 7.5l.5 1M16 7.5l-.5 1"/><path d="M9 4.8L8.4 2.6l1.9 1.1M15 4.8l.6-2.2-1.9 1.1"/>',
 };
 
 /** Phones and tablets (no mouse): touch wording, tap-to-reveal controls, no 5.1 advice. */

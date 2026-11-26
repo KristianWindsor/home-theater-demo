@@ -136,6 +136,17 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
 - **Two kinds.** `kind: 'room'` plays on the home screen and drives the 3D room through hooks (camera override,
   extra lights, extra layers, reshaping walls/ceiling/sky, post override). `kind: 'stage'` takes the screen at
   `#/x/<id>` and extends `core/stage.js` (HDR target at adaptive resolution + the shared bloom/tonemap chain).
+- **Cars and cats** are physical models shared like instruments. `core/motor.js` is the car (torque curve,
+  gearbox, a lap simulation with corner limits and braking, free-revving, overrun pops) writing a 200 Hz
+  `ControlTrack` (rpm, load, fuel cut, gear, speed, position) that the sound and the picture both read.
+  `audio/vehicle.js` turns it into sound: one `EngineCore` (crank angle, firing order, per-cylinder variation,
+  exhaust waveguides per bank, intake, valvetrain, starter, pops) heard through several `EngineVoice` taps at
+  once, or from outside through `PassBy` (a delay line read at the propagation delay: Doppler, 1/r, air
+  absorption, the ground reflection). `audio/cat.js` has the purr (`PurrCore`: glottal pulses ~23/s through
+  breathing phases the score schedules, plus a pure sub layer), bell, paws, kneading and the trill;
+  `core/cat.js` ray-marches the cat (an SDF posed from JS) into the room with real depth.
+- **Easter eggs.** `hidden: true` in `experiences/index.js` keeps a piece off the Demos page; a scene with an
+  `onClick(x, y)` receives clicks on the picture (The Passenger starts *Purr / Rev* from its sleeping cat).
 - **Lights.** While a piece runs, the light rig is in `script` mode and asks `scene.light(fixture, t)` for each
   fixture's colour (fixtures carry `anchor` and `az`), so a Hue sink gets the cues for free.
 

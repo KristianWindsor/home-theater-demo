@@ -28,7 +28,7 @@ export function demos(root) {
   const auds = files.filter((i) => i.kind === 'audio');
   const builtin = (d) => ({ icon: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration, where: 'In the room', run: () => app.runDemo(d.id) });
   const shows = [
-    ...EXPERIENCES.map((x) => ({ icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
+    ...EXPERIENCES.filter((x) => !x.hidden).map((x) => ({ icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
     ...BUILTIN_DEMOS.filter((d) => d.show).map(builtin), // short built-in pieces sit with the shows
   ];
   const setup = BUILTIN_DEMOS.filter((d) => !d.show).map(builtin);
