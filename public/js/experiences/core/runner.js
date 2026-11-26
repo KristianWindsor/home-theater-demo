@@ -172,7 +172,7 @@ export class ExperienceRunner {
     const s = this.scene;
     if (!s) return;
     let t = this.state === 'playing' || this.state === 'ended' ? this.time(dt) : 0;
-    if (this.peek !== undefined && this.peek !== null) t = this.peek; // devtools: marquee.experience.peek = 42
+    if (this.peek !== undefined && this.peek !== null) t = this.peek; // devtools: kw51.experience.peek = 42
     this.t = t;
     s.update(t, dt, this.state);
     s.render(w, h, t, dt);

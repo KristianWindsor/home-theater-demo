@@ -1,6 +1,7 @@
 // Per-device settings (this browser on this TV), persisted in localStorage.
 
-const KEY = 'marquee.settings.v1';
+const KEY = 'kw51.settings.v1';
+const LEGACY_KEY = 'marquee.settings.v1'; // from before the app was renamed KW 5.1; still read, so nobody loses their settings
 
 export const DEFAULTS = {
   volume: 1,
@@ -21,7 +22,7 @@ export const DEFAULTS = {
 
 function load() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY) || '{}') };
   } catch {
     return { ...DEFAULTS };
   }

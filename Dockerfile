@@ -1,4 +1,4 @@
-# Marquee: Node server + Python analyzer + ffmpeg in one small image.
+# KW 5.1: Node server + Python analyzer + ffmpeg in one small image.
 # Media is expected as a mounted volume (see docker-compose.yml), not baked in.
 FROM node:24-trixie-slim
 

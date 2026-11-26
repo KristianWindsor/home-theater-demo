@@ -1,4 +1,4 @@
-// Marquee front end: boots the renderer, audio, library and screens; runs the frame loop.
+// KW 5.1 front end: boots the renderer, audio, library and screens; runs the frame loop.
 import { createContext, Target } from './gl/gl.js';
 import { Room } from './room/room.js';
 import { Visualizer } from './viz/visualizer.js';
@@ -453,7 +453,7 @@ class App {
     }
     this.demo = null;
     this.room.setOrb(null);
-    this.room.setCard('MARQUEE', 'Home Theater');
+    this.room.setCard('KW 5.1', 'Home Theater');
     for (const id in this.room.speakers) this.room.setActivity(id, 0);
     this.emit('demo', null);
   }
@@ -461,4 +461,4 @@ class App {
 
 const app = new App();
 app.boot().catch((e) => console.error('[boot]', e));
-window.marquee = app; // handy from the devtools console
+window.kw51 = app; // handy from the devtools console

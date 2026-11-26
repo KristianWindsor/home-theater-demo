@@ -45,9 +45,12 @@ export function createFrame() {
   };
 }
 
+const SCORE_FORMAT = 'kw51-score'; // what analyzer/kw51_analysis writes
+const LEGACY_SCORE_FORMAT = 'marquee-score'; // scores written before the app was renamed KW 5.1
+
 export class Score {
   constructor(json) {
-    if (json.format !== 'marquee-score') throw new Error('not a marquee score');
+    if (json.format !== SCORE_FORMAT && json.format !== LEGACY_SCORE_FORMAT) throw new Error(`not a ${SCORE_FORMAT} file`);
     this.json = json;
     const f = json.frames;
     this.fps = f.fps;

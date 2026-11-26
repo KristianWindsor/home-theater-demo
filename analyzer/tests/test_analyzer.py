@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from marquee_analysis.pipeline import analyze  # noqa: E402
+from kw51_analysis.pipeline import analyze  # noqa: E402
 
 
 def match(det, ref, tol):
@@ -39,7 +39,7 @@ def match(det, ref, tol):
 
 
 def main():
-    tmp = tempfile.mkdtemp(prefix="marquee-test-")
+    tmp = tempfile.mkdtemp(prefix="kw51-test-")
     song = os.path.join(tmp, "neon.flac")
     truth_path = os.path.join(tmp, "truth.json")
     subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "synth_song.py"), song, "--truth", truth_path],
@@ -54,7 +54,7 @@ def main():
         if not ok:
             failures.append(name)
 
-    print("Marquee analyzer accuracy report")
+    print("KW 5.1 analyzer accuracy report")
     err = abs(g["bpm"] - truth["bpm"]) / truth["bpm"]
     check("tempo", err < 0.01, f"{g['bpm']} BPM vs {truth['bpm']} ({err * 100:.2f}% off)")
 

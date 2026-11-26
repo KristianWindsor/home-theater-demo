@@ -25,7 +25,7 @@ visualizer tap possible.
 
 ## The score (analyzer output)
 
-`format: "marquee-score"`, `version: 1`. Times in seconds.
+`format: "kw51-score"` (scores written before the rename say `"marquee-score"`; both load), `version: 1`. Times in seconds.
 
 | Key | Contents |
 |---|---|
@@ -159,5 +159,5 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
 2. Register it in `experiences/index.js` (short title, one-line tagline, duration, kind) and draw its card
    icon `xp-<id>` in `core/dom.js`. It appears under *Shows* on the Demos page.
 3. Iterate on the sound with `node scripts/render_experience.mjs <id>` (6-channel WAV; renders ~10× real time),
-   and on the picture by typing `marquee.experience.peek = 42` in the browser console to hold the visuals at
+   and on the picture by typing `kw51.experience.peek = 42` in the browser console to hold the visuals at
    any moment (`null` resumes).

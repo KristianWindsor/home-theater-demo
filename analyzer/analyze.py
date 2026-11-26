@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Marquee analyzer: audio file -> choreography score JSON for the visualizer.
+KW 5.1 analyzer: audio file -> choreography score JSON for the visualizer.
 
     python3 analyzer/analyze.py song.flac -o song.score.json
     python3 analyzer/analyze.py media/music --out-dir data/scores     # whole folder (by file name)
@@ -17,7 +17,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from marquee_analysis.pipeline import analyze  # noqa: E402
+from kw51_analysis.pipeline import analyze  # noqa: E402
 
 AUDIO_EXT = {".flac", ".mp3", ".m4a", ".aac", ".wav", ".aif", ".aiff", ".ogg", ".opus", ".wma", ".alac", ".ape",
              ".wv", ".dsf", ".dff", ".mka"}

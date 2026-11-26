@@ -238,7 +238,7 @@ def analyze(path, progress_cb=None):
     score = {
         "format": SCORE_FORMAT,
         "version": SCORE_VERSION,
-        "generator": f"marquee-analyzer {__version__}",
+        "generator": f"kw51-analyzer {__version__}",
         "source": {
             "file": os.path.basename(path), "size": st.st_size, "mtime": int(st.st_mtime),
             "duration": round(duration, 3), "sampleRate": info["sample_rate"], "channels": info["channels"],

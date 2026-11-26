@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate original, copyright-free test media so Marquee works before you add your own files.
+Generate original, copyright-free test media so KW 5.1 works before you add your own files.
 
     python3 scripts/make_test_media.py media
 
 Creates
-  music/Marquee Synth Lab/Neon Cathedral.flac   124 BPM EDM track with builds and drops
-  music/Marquee Synth Lab/Glass Tide.flac       beatless ambient piece
+  music/KW 5.1 Synth Lab/Neon Cathedral.flac   124 BPM EDM track with builds and drops
+  music/KW 5.1 Synth Lab/Glass Tide.flac       beatless ambient piece
   demos/Channel Identification 5.1.mp4          each speaker in turn, AAC 5.1 (plays everywhere)
   movies/Countdown Test Film (2026).mkv         H.264 + TrueHD 5.1 (default) + AC-3 5.1 + chapters:
                                                 the typical Blu-ray rip that browsers can't play
@@ -173,17 +173,17 @@ def movie(path_mkv, fontfile):
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "media"
-    for d in ("music/Marquee Synth Lab", "demos", "movies"):
+    for d in ("music/KW 5.1 Synth Lab", "demos", "movies"):
         os.makedirs(os.path.join(out, d), exist_ok=True)
     fontfile = font()
     if not fontfile:
         print("note: no TTF font found; videos will have no captions", file=sys.stderr)
 
-    p = os.path.join(out, "music/Marquee Synth Lab/Neon Cathedral.flac")
+    p = os.path.join(out, "music/KW 5.1 Synth Lab/Neon Cathedral.flac")
     print("music: Neon Cathedral")
     y, _ = synth_song.render()
     synth_song.encode(y, p, "Neon Cathedral", "Synthesized test track (124 BPM, A minor)")
-    p = os.path.join(out, "music/Marquee Synth Lab/Glass Tide.flac")
+    p = os.path.join(out, "music/KW 5.1 Synth Lab/Glass Tide.flac")
     print("music: Glass Tide")
     synth_song.encode(synth_song.render_ambient(), p, "Glass Tide", "Synthesized beatless ambient piece")
 

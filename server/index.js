@@ -1,5 +1,5 @@
 'use strict';
-// Marquee server: static app + media library API. Zero npm dependencies (Node >= 18).
+// KW 5.1 server: static app + media library API. Zero npm dependencies (Node >= 18).
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -246,8 +246,8 @@ function start() {
   server.keepAliveTimeout = 65000;
   server.requestTimeout = 0; // long media streams
   server.listen(config.port, config.host, () => {
-    console.log(`[marquee] v${VERSION} listening on http://${config.host}:${config.port}`);
-    console.log(`[marquee] media: ${config.mediaDir}  data: ${config.dataDir}  config: ${config.configDir}`);
+    console.log(`[server] KW 5.1 v${VERSION} listening on http://${config.host}:${config.port}`);
+    console.log(`[server] media: ${config.mediaDir}  data: ${config.dataDir}  config: ${config.configDir}`);
   });
   library.scan().then((items) => {
     const counts = library.CATEGORIES.map((c) => `${items.filter((i) => i.category === c).length} ${c}`).join(', ');

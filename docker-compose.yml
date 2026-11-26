@@ -1,8 +1,8 @@
 services:
-  marquee:
+  kw51:
     build: .
-    image: marquee:latest
-    container_name: marquee
+    image: kw51:latest
+    container_name: kw51
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -10,7 +10,7 @@ services:
       # Your files: demos/, movies/, music/ (read-only is fine; nothing is written here)
       - ./media:/media:ro
       # Analysis scores, thumbnails, cover art, lossless FLAC fallbacks and in-app scene edits
-      - marquee-data:/data
+      - kw51-data:/data
       # catalog.json (scene lists, reels) and room.json (the 3D room). Edit without rebuilding.
       - ./config:/app/config:ro
     environment:
@@ -18,4 +18,4 @@ services:
       # - ALLOW_SCENE_EDITS=false   # lock the scene lists
 
 volumes:
-  marquee-data:
+  kw51-data:

@@ -22,7 +22,7 @@ export function home(root) {
   );
   const xpPill = h('div', { class: 'xp-pill' });
   const el = h('div', { class: 'screen home' },
-    h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'MARQUEE'),
+    h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'KW 5.1'),
       h('div', { class: 'room-name' }, (app.library.room && app.library.room.name) || 'Home Theater')),
     h('div', { class: 'room-hint' }, TOUCH_ONLY
       ? ['Tap a speaker to hear it alone', h('br'), 'Drag to look around · tap the couch to sit']

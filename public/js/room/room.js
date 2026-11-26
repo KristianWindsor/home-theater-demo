@@ -356,7 +356,7 @@ export class Room {
     this.ambient = 1;          // scales the room's own (non-Hue) lights
     this.walls = {};
     this.build(config);
-    this.setCard('MARQUEE', 'Home Theater');
+    this.setCard('KW 5.1', 'Home Theater');
   }
 
   mesh(key, fn) {

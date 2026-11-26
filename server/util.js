@@ -121,7 +121,7 @@ function readJSONFile(file, fallback) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (e) {
-    if (e.code !== 'ENOENT') console.warn(`[marquee] could not read ${file}: ${e.message}`);
+    if (e.code !== 'ENOENT') console.warn(`[json] could not read ${file}: ${e.message}`);
     return fallback;
   }
 }

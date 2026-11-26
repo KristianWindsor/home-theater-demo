@@ -1,4 +1,4 @@
-# Marquee
+# KW 5.1
 
 A home-theater showcase that runs in a browser on the machine connected to the TV/receiver:
 
@@ -32,7 +32,7 @@ a 5.1 channel-ID video, and a "Blu-ray style" test film with a TrueHD track plus
 ```bash
 python3 scripts/make_test_media.py media        # needs python3, numpy, scipy, ffmpeg on the host
 # or with the image you just built (writes into ./media):
-docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/media:/media" marquee:latest python3 scripts/make_test_media.py /media
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/media:/media" kw51:latest python3 scripts/make_test_media.py /media
 ```
 
 Open the page on the theater PC, click **Enter** (that also starts audio and goes fullscreen), then use the mouse,
