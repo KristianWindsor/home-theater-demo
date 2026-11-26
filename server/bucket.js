@@ -8,7 +8,7 @@ const config = require('./config');
 
 const enabled = () => !!config.bucket;
 
-/** Movies are the only category kept remotely: music needs local files for the analyzer, demos are small. */
+/** Movies are the only category kept remotely: music needs local files for the analyzer, demos and trailers are small. */
 const isRemote = (category) => enabled() && category === 'movies';
 
 // ---------------------------------------------------------------- what the last listing saw

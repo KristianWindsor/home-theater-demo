@@ -130,7 +130,8 @@ async function makeThumb(item, t, width, out) {
 async function thumb(req, res, item, query) {
   if (!item || item.kind !== 'video') return sendError(req, res, 404, 'no video');
   const dur = item.duration || 0;
-  let t = Number(query.get('t'));
+  const tq = query.get('t'); // Number(null) is 0: without a ?t= the poster was the first frame, usually black
+  let t = tq === null || tq === '' ? NaN : Number(tq);
   if (!Number.isFinite(t)) t = dur ? Math.min(dur * 0.12, 600) : 10;
   t = Math.max(0, Math.min(t, Math.max(0, dur - 1)));
   const w = [320, 480, 640, 960, 1280].find((x) => x >= (Number(query.get('w')) || 480)) || 1280;

@@ -65,5 +65,35 @@
       "description": "Pink noise in each speaker in turn, as a video (AAC 5.1)."
     }
   },
+  "trailers": {
+    "Dolby/Amaze.mp4": {
+      "title": "Dolby Atmos — Amaze",
+      "description": "Mountains and rain forest. More of the sound comes from behind you than from the screen."
+    },
+    "Dolby/Spheres.mp4": {
+      "title": "Dolby — Spheres",
+      "description": "Glossy spheres bounce, roll and streak past, ending on the Dolby Surround 7.1 logo."
+    },
+    "Dolby/Unfold.mp4": {
+      "title": "Dolby Atmos — Unfold",
+      "description": "Crystal panels unfold into a mirrored tunnel, ending on the Dolby Atmos logo."
+    },
+    "DTS/Orchestra.mp4": {
+      "title": "DTS — Orchestra",
+      "description": "Swirls of golden light and an orchestral score spread around the room, ending on the DTS-HD logo."
+    },
+    "DTS/Out of the Box.mp4": {
+      "title": "DTS:X — Out of the Box",
+      "description": "A glowing cube bursts apart and its pieces scatter through space, ending on the DTS:X logo."
+    },
+    "THX/Eclipse.mp4": {
+      "title": "THX — Eclipse",
+      "description": "The Deep Note from start to finish. An eclipse opens into an iris as the chord builds, and the subwoofer joins for the climax."
+    },
+    "THX/Genesis.mp4": {
+      "title": "THX — Genesis",
+      "description": "Water, a neon city at night and a futuristic lab, ending with the Deep Note."
+    }
+  },
   "music": {}
 }

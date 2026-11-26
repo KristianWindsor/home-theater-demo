@@ -1,4 +1,4 @@
-// Hash router: #/movies, #/movie/<id>, #/play/<id>?t=..., #/music, #/viz/<id>, #/demos, #/settings
+// Hash router: #/movies, #/movie/<id>, #/play/<id>?t=..., #/music, #/viz/<id>, #/demos, #/trailers, #/settings
 // Each screen module exports { mount(root, params, query) -> { unmount?, onKey? } }.
 import { clear } from './dom.js';
 

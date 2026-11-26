@@ -7,8 +7,10 @@ A home-theater showcase that runs in a browser on the machine connected to the T
   the TV for movies; click the couch to sit down. Speakers move and lights glow with the actual output levels.
 - **Demos**: *Shows* (seven composed surround experiences where the music, where each sound sits in the room,
   the picture and the lights all come from one score, plus a helicopter orbiting the couch and a thunderstorm
-  with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips
-  (Dolby/DTS trailers etc.). See [Experiences](#experiences).
+  with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips.
+  See [Experiences](#experiences).
+- **Trailers**: the Dolby, DTS and THX trailers that play before a film in the cinema, one section per brand.
+  *Play all* runs them back to back.
 - **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, scene fades, and your
   starred scenes as tiles on the Movies page. Mark scenes while watching with **B** (start) and **E** (end).
 - **Music visualizer**: each song is analyzed once (beats, downbeats, drums, harmony, key, sections, builds,
@@ -71,6 +73,8 @@ media/
   movies/   films, MKV or MP4 (sub-folders fine). Optional poster: same name .jpg, or poster.jpg in the folder
   music/    any common audio format, one folder per album works best; cover.jpg/folder.jpg or embedded art.
             A video with the same name as a song ("My Girls.opus" + "My Girls.webm") is its music video
+  trailers/ Dolby/DTS/THX trailers (video), one folder per brand (trailers/Dolby/Spheres.mp4). Optional poster:
+            same name .jpg
 ```
 
 New files show up automatically (the library rescans every couple of minutes, or *Settings → Rescan*).
@@ -290,7 +294,7 @@ it), and which Hue light sits behind what. Edit it to match the real room; the s
 | Variable | Default | |
 |---|---|---|
 | `PORT` | 8080 | |
-| `MEDIA_DIR` | `/media` | `demos/`, `movies/`, `music/` |
+| `MEDIA_DIR` | `/media` | `demos/`, `movies/`, `music/`, `trailers/` |
 | `DATA_DIR` | `/data` | scores, thumbnails, covers, FLAC fallbacks, scene edits |
 | `CONFIG_DIR` | `/app/config` | `catalog.json`, `room.json` |
 | `ANALYZE_ON_START` | `true` | analyze new music in the background |
@@ -324,19 +328,19 @@ Runs on the kwk8s k3s server (`k8s/`). Pushing to `main` builds the image and ro
 changes under `k8s/` are applied by hand with `kubectl apply -f k8s/`.
 
 Media isn't in git or the image. It lives in the private S3 bucket `kwk8s-home-theater-files`, laid out like
-`media/` (`demos/`, `movies/`, `music/`).
+`media/` (`demos/`, `movies/`, `music/`, `trailers/`).
 
 - **Movies never touch the server.** The app lists and probes them in the bucket, and the browser plays them from
   CloudFront (`https://home-theater-media.kwk8s.tech`) through signed links that expire after `MEDIA_LINK_HOURS`.
   `/media/movies/…` answers with a redirect to a fresh link. The bytes are the file's, untouched, as before.
   New movies show up within a couple of minutes, no restart needed.
-- **Music and demos** are synced onto the media volume by an init container when the pod starts. Music has to
+- **Music, demos and trailers** are synced onto the media volume by an init container when the pod starts. Music has to
   be same-origin: it plays through Web Audio, which hears a cross-origin source without CORS as silence. The bucket is the source of truth: files deleted from it are deleted from the server on the
   next restart. New songs are analyzed on the server after the restart.
 
 ```bash
 aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md --exclude '*.DS_Store'   # add --delete to remove files too
-kubectl rollout restart deployment/home-theater                                             # only for new music/demos
+kubectl rollout restart deployment/home-theater                                             # only for new music/demos/trailers
 ```
 
 CloudFront caches files for up to a day; after replacing a movie under the same name, run
@@ -370,7 +374,7 @@ public/js/
   lights/        virtual Hue light rig (+ the planned Hue sink)
   experiences/   composed pieces: core/ (timeline, runner, stage), audio/ (DSP, instruments, studio,
                  worker renderer) and one folder per piece (score.js, audio.js, scene.js)
-  screens/       home, movies, player, demos, experience, music, visualizer, settings
+  screens/       home, movies, player, demos, trailers, experience, music, visualizer, settings
 ```
 
 ## Roadmap

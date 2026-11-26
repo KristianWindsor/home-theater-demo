@@ -4,14 +4,20 @@ import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
 import { settings, setSetting } from '../core/settings.js';
 import { checkVideo } from '../core/compat.js';
+import { trailerReel } from './trailers.js';
 
 const FADE_IN = 0.8;
 const FADE_OUT = 1.2;
 
-// queue: true = several entries that play back to back (Play all scenes)
+// queue: true = several entries that play back to back (Play all scenes, the trailer reel)
 function buildPlaylist(app, arg, q) {
   const item = app.items.get(arg);
   if (!item) return { list: [] };
+  if (q.get('reel') === 'trailers') {
+    // every trailer back to back, from this one on (Play all on the Trailers page)
+    const list = trailerReel(app.library.items).map((v) => ({ item: v, start: 0, end: null, title: v.title }));
+    return { title: 'Trailers', queue: true, reel: 'trailers', list, first: Math.max(0, list.findIndex((e) => e.item.id === item.id)) };
+  }
   const scenes = (item.scenes || []).map((s, i) => ({ ...s, i })).filter((s) => s.start !== null);
   if (q.get('scenes') === 'all') {
     const list = scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i }));
@@ -158,11 +164,17 @@ export function player(root, arg, q) {
     ending = false;
     // the address bar follows what's playing, so a refresh or a shared link opens this scene
     const id = encodeURIComponent(entry.item.id);
-    if (pl.queue) app.router.replaceQuiet(`/play/${id}?scenes=all&at=${i}`);
+    if (pl.reel) app.router.replaceQuiet(`/play/${id}?reel=${pl.reel}`);
+    else if (pl.queue) app.router.replaceQuiet(`/play/${id}?scenes=all&at=${i}`);
     else if (entry.scene !== undefined && entry.scene !== null) app.router.replaceQuiet(`/play/${id}?scene=${entry.scene}`);
     endCard.style.display = 'none';
-    titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
-    sceneEl.textContent = entry.title && entry.title !== entry.item.title ? entry.title : '';
+    if (pl.reel) {
+      titleEl.textContent = entry.item.title;
+      sceneEl.textContent = `${pl.title} · ${i + 1} of ${pl.list.length}`;
+    } else {
+      titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
+      sceneEl.textContent = entry.title && entry.title !== entry.item.title ? entry.title : '';
+    }
     const fades = settings.sceneFades && (entry.start > 0 || entry.end);
     fade.style.transition = 'none';
     fade.style.opacity = fades ? 1 : 0;
@@ -206,11 +218,11 @@ export function player(root, arg, q) {
     if (auto && idx + 1 < pl.list.length) return load(idx + 1);
     if (auto && pl.sceneNav) return jumpScene(1, true);
     endCard.replaceChildren(h('div', { class: 'box' },
-      h('h2', {}, entry.title || 'Done'),
+      h('h2', {}, pl.reel ? pl.title : entry.title || 'Done'),
       h('div', { class: 'row' },
-        h('button', { class: 'btn btn-primary', onclick: () => load(idx), 'data-autofocus': true }, icon('refresh'), 'Replay'),
+        h('button', { class: 'btn btn-primary', onclick: () => load(pl.reel ? 0 : idx), 'data-autofocus': true }, icon('refresh'), pl.reel ? 'Play again' : 'Replay'),
         nextSceneOf(entry) ? h('button', { class: 'btn', onclick: () => jumpScene(1) }, icon('next'), 'Next scene') : null,
-        h('button', { class: 'btn', onclick: () => { endCard.style.display = 'none'; fade.style.opacity = 0; video.volume = settings.volume; entry = { ...entry, end: null }; ending = false; video.play(); } }, icon('play'), 'Keep watching'),
+        pl.reel ? null : h('button', { class: 'btn', onclick: () => { endCard.style.display = 'none'; fade.style.opacity = 0; video.volume = settings.volume; entry = { ...entry, end: null }; ending = false; video.play(); } }, icon('play'), 'Keep watching'),
         h('button', { class: 'btn', onclick: () => app.router.back() }, icon('back'), 'Back'))));
     endCard.style.display = '';
     const f = endCard.querySelector('[data-autofocus]');

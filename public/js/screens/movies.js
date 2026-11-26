@@ -123,7 +123,7 @@ export function movie(root, id) {
     const playable = scenes.filter((s) => s.start !== null);
     const v = p.video;
     el.replaceChildren(
-      topbar(item.category === 'demos' ? 'Demo' : 'Movie'),
+      topbar({ demos: 'Demo', trailers: 'Trailer' }[item.category] || 'Movie'),
       h('div', { class: 'scroll' },
         h('div', { class: 'hero' },
           h('div', { class: 'hero-bg', style: { backgroundImage: `url("${api.thumb(item.id, item.duration * 0.3, 1280)}")` } }),

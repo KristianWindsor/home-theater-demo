@@ -1,5 +1,5 @@
 'use strict';
-// Scans MEDIA_DIR/{demos,movies,music} (movies from S3 when MEDIA_BUCKET is set), probes files (cached),
+// Scans MEDIA_DIR/{demos,trailers,movies,music} (movies from S3 when MEDIA_BUCKET is set), probes files (cached),
 // pairs songs with their music videos, merges curated metadata from config/catalog.json and scene edits saved
 // from the app (data/scenes.json).
 const fs = require('fs');
@@ -10,7 +10,7 @@ const bucket = require('./bucket');
 const { findSidecarImage } = require('./media');
 const { VIDEO_EXT, AUDIO_EXT, idFor, readJSONFile, writeJSONAtomic, parseTime, limiter } = require('./util');
 
-const CATEGORIES = ['demos', 'movies', 'music'];
+const CATEGORIES = ['demos', 'trailers', 'movies', 'music'];
 const probeCacheFile = () => path.join(config.dataDir, 'probe-cache.json');
 const scenesFile = () => path.join(config.dataDir, 'scenes.json');
 
@@ -28,7 +28,7 @@ function onChange(fn) {
 function loadCatalog() {
   const cat = readJSONFile(path.join(config.configDir, 'catalog.json'), null) ||
     readJSONFile(path.join(config.configDir, 'catalog.example.json'), {}) || {};
-  return { demos: cat.demos || {}, movies: cat.movies || {}, music: cat.music || {} };
+  return { demos: cat.demos || {}, trailers: cat.trailers || {}, movies: cat.movies || {}, music: cat.music || {} };
 }
 
 function loadRoom() {
@@ -166,7 +166,7 @@ async function scan() {
         const isAudio = AUDIO_EXT.has(ext);
         if (!isVideo && !isAudio) continue;
         if (category === 'music' && !isAudio) continue;
-        if (category === 'movies' && !isVideo) continue;
+        if ((category === 'movies' || category === 'trailers') && !isVideo) continue;
         const full = path.join(dir, rel);
         let st = f;
         if (!remote) {

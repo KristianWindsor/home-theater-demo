@@ -23,7 +23,7 @@ COPY analyzer ./analyzer
 COPY scripts ./scripts
 COPY config ./config
 
-RUN mkdir -p /media/demos /media/movies /media/music /data \
+RUN mkdir -p /media/demos /media/trailers /media/movies /media/music /data \
  && chown -R node:node /data /media
 
 USER node

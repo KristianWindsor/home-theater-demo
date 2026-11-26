@@ -16,6 +16,7 @@ export function home(root) {
   const go = (path) => () => app.router.go(path);
   const dock = h('div', { class: 'dock' },
     h('button', { class: 'dock-item', onclick: go('/demos'), 'data-autofocus': true }, icon('surround'), h('span', {}, 'Demos')),
+    h('button', { class: 'dock-item', onclick: go('/trailers') }, icon('ticket'), h('span', {}, 'Trailers')),
     h('button', { class: 'dock-item', onclick: go('/movies') }, icon('film'), h('span', {}, 'Movies')),
     h('button', { class: 'dock-item', onclick: go('/music') }, icon('music'), h('span', {}, 'Music')),
     h('button', { class: 'dock-item', onclick: go('/settings') }, icon('settings'), h('span', {}, 'Settings')),

@@ -129,7 +129,7 @@ export function settingsScreen(root) {
     try {
       const lib = app.library;
       const a = (lib.server && lib.server.analysis) || {};
-      const counts = ['movies', 'demos', 'music'].map((c) => `${lib.items.filter((i) => i.category === c).length} ${c}`).join(' · ');
+      const counts = ['movies', 'trailers', 'demos', 'music'].map((c) => `${lib.items.filter((i) => i.category === c).length} ${c}`).join(' · ');
       const ready = lib.items.filter((i) => i.kind === 'audio' && i.analysis && i.analysis.status === 'ready').length;
       const audio = lib.items.filter((i) => i.kind === 'audio').length;
       status.textContent = `${counts}. ${ready}/${audio} tracks choreographed${a.queued ? `, ${a.queued} queued` : ''}${a.failed ? `, ${a.failed} failed` : ''}. Server v${lib.server ? lib.server.version : '?'}.`;

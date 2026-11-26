@@ -41,10 +41,11 @@ export function demos(root) {
       h('div', { class: 'demo-grid' }, shows.map((d, i) => demoCard(d, i === 0))),
       section('Setup', 'Check each speaker and the subwoofer'),
       h('div', { class: 'demo-grid' }, setup.map((d) => demoCard(d))),
-      section('Your clips'),
-      vids.length
-        ? h('div', { class: 'demo-grid' }, vids.map((v) => videoCard(v, () => app.router.go(v.scenes && v.scenes.length ? `/movie/${v.id}` : `/play/${v.id}?t=0`))))
-        : h('div', { class: 'empty' }, 'Put demo clips (Dolby Atmos/DTS:X trailers, audiophile surround tests) in ', h('code', {}, 'media/demos'), '.'),
+      // your own clips from media/demos (the Dolby/DTS/THX trailers have their own page)
+      vids.length ? [
+        section('Your clips'),
+        h('div', { class: 'demo-grid' }, vids.map((v) => videoCard(v, () => app.router.go(v.scenes && v.scenes.length ? `/movie/${v.id}` : `/play/${v.id}?t=0`)))),
+      ] : null,
       auds.length ? [
         h('div', { class: 'section-title' }, 'Demo audio (plays with the visualizer)'),
         h('div', { class: 'tracks' }, auds.map((a, i) => h('button', { class: 'track', onclick: async () => { await app.music.playQueue(auds, i); app.router.go(`/viz/${a.id}`); } },
