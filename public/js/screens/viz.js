@@ -1,4 +1,4 @@
-// Full-screen visualizer for the current track.
+// Full-screen visualizer for the current track, or its music video when it has one (V switches).
 import { h, icon, fmtTime } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { settings, setSetting } from '../core/settings.js';
@@ -6,6 +6,7 @@ import { WORLDS, WORLD_BY_ID } from '../viz/worlds/index.js';
 import { rgbToCss } from '../viz/palette.js';
 import { ScoreSource } from '../viz/score.js';
 import { frameClock } from '../gl/resolution.js';
+import { qualityBadge } from '../core/quality.js';
 
 export function viz(root, id) {
   const app = ctx.app;
@@ -32,10 +33,11 @@ export function viz(root, id) {
   const head = h('div', { class: 'head' });
   const time = h('span', { class: 'time mono muted' });
   const playBtn = h('button', { class: 'btn btn-icon', onclick: () => m.toggle(), 'aria-label': 'Play/pause' }, icon('pause'));
-  const worldBtn = h('button', { class: 'btn small', onclick: () => cycleWorld(), title: 'Choose a world (V). Auto follows the choreography.' }, icon('layers'), 'Auto');
+  const worldBtn = h('button', { class: 'btn small', onclick: () => cycleWorld() }, icon('layers'), 'Auto');
   const hudBtn = h('button', { class: `btn btn-icon ${settings.showHud ? 'active' : ''}`, onclick: () => toggleHud(), title: 'What the analyzer sees (I)' }, icon('info'));
   const hud = h('div', { class: 'hud', style: { display: settings.showHud ? '' : 'none' } });
   const live = h('div', { class: 'live-badge', style: { display: 'none' } });
+  const quality = h('span', { class: 'v-quality' });
   const bar = h('div', { class: 'v-bar' },
     sections,
     h('div', { class: 'controls' },
@@ -43,7 +45,7 @@ export function viz(root, id) {
       h('button', { class: 'btn btn-icon', onclick: () => m.prev(), 'aria-label': 'Previous track' }, icon('prev')),
       playBtn,
       h('button', { class: 'btn btn-icon', onclick: () => m.next(), 'aria-label': 'Next track' }, icon('next')),
-      time, h('div', { class: 'spacer' }), worldBtn, hudBtn));
+      time, quality, h('div', { class: 'spacer' }), worldBtn, hudBtn));
   const el = h('div', { class: 'screen vizscreen' }, card, live, hud, h('div', { class: 'v-overlay' }, bar));
   root.appendChild(el);
 
@@ -102,9 +104,14 @@ export function viz(root, id) {
     } else t3.textContent = 'reacting live';
     card.classList.remove('hide');
     clearTimeout(cardTimer);
-    cardTimer = setTimeout(() => card.classList.add('hide'), showFor);
-    const a = m.item.analysis || {};
-    if (m.source instanceof ScoreSource) live.style.display = 'none';
+    cardTimer = setTimeout(() => card.classList.add('hide'), m.videoOn ? Math.min(showFor, 4000) : showFor);
+    updateLive();
+  }
+
+  // "Live · analysis queued" is about the visualizer: a music video doesn't need it
+  function updateLive() {
+    const a = (m.item && m.item.analysis) || {};
+    if (m.source instanceof ScoreSource || m.videoOn) live.style.display = 'none';
     else {
       live.style.display = '';
       live.replaceChildren(h('span', { class: 'badge warn' }, a.status === 'analyzing' ? `Live · analyzing ${Math.round((a.progress || 0) * 100)}%` : a.status === 'failed' ? 'Live (analysis failed)' : 'Live · analysis queued'));
@@ -115,6 +122,11 @@ export function viz(root, id) {
     if (type === 'track') {
       drawSections();
       updateCard();
+      quality.replaceChildren(m.item ? qualityBadge(m.item) || '' : '');
+      updateWorldBtn();
+    } else if (type === 'video') {
+      updateWorldBtn();
+      updateLive();
     } else if (type === 'score') {
       drawSections();
       updateCard(4000);
@@ -129,6 +141,8 @@ export function viz(root, id) {
   }));
   drawSections();
   updateCard();
+  quality.replaceChildren(m.item ? qualityBadge(m.item) || '' : '');
+  updateWorldBtn();
   if (m.el.paused) playBtn.replaceChildren(icon('play'));
 
   const tick = () => {
@@ -139,14 +153,36 @@ export function viz(root, id) {
   };
   barRaf = requestAnimationFrame(tick);
 
-  function cycleWorld(dir = 1) {
+  /** What's on screen: 'video' (the song's music video), null (Auto: the choreographed visualizer) or a world id. */
+  function picture() {
+    return m.videoOn ? 'video' : app.viz().director.override || null;
+  }
+
+  function setPicture(id) {
     const d = app.viz().director;
-    const ids = [null, ...WORLDS.map((w) => w.id)];
-    const i = ids.indexOf(d.override || null);
-    const next = ids[(i + dir + ids.length) % ids.length];
-    d.forceWorld(next);
-    worldBtn.replaceChildren(icon('layers'), next ? WORLD_BY_ID[next].label : 'Auto');
+    if (id === 'video') {
+      d.forceWorld(null);
+      m.setVideo(true);
+    } else {
+      if (m.mv) m.setVideo(false);
+      d.forceWorld(id);
+    }
+    updateWorldBtn();
+  }
+
+  function cycleWorld(dir = 1) {
+    const ids = [...(m.mv ? ['video'] : []), null, ...WORLDS.map((w) => w.id)];
+    const i = ids.indexOf(picture());
+    setPicture(ids[(i + dir + ids.length) % ids.length]);
     showUi();
+  }
+
+  function updateWorldBtn() {
+    const p = picture();
+    worldBtn.replaceChildren(icon(p === 'video' ? 'film' : 'layers'), p === 'video' ? 'Video' : p ? WORLD_BY_ID[p].label : 'Auto');
+    worldBtn.title = m.mv
+      ? 'The music video, or a visualizer world (V). Auto follows the choreography.'
+      : 'Choose a world (V). Auto follows the choreography.';
   }
 
   function toggleHud() {
@@ -199,7 +235,7 @@ export function viz(root, id) {
         case 'n': case 'N': case 'MediaTrackNext': m.next(); return true;
         case 'p': case 'P': case 'MediaTrackPrevious': m.prev(); return true;
         case 'v': case 'V': cycleWorld(e.shiftKey ? -1 : 1); return true;
-        case 'a': case 'A': app.viz().director.forceWorld(null); worldBtn.replaceChildren(icon('layers'), 'Auto'); return true;
+        case 'a': case 'A': setPicture(m.mv ? 'video' : null); return true;
         case 'i': case 'I': toggleHud(); return true;
         case 't': case 'T': updateCard(); return true;
         default: return false;

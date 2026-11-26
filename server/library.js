@@ -1,6 +1,7 @@
 'use strict';
 // Scans MEDIA_DIR/{demos,movies,music} (movies from S3 when MEDIA_BUCKET is set), probes files (cached),
-// merges curated metadata from config/catalog.json and scene edits saved from the app (data/scenes.json).
+// pairs songs with their music videos, merges curated metadata from config/catalog.json and scene edits saved
+// from the app (data/scenes.json).
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
@@ -102,6 +103,34 @@ async function listRemote(category) {
     .filter((f) => !f.rel.split('/').some((part) => part.startsWith('.')));
 }
 
+const stem = (rel) => rel.slice(0, rel.length - path.extname(rel).length);
+const urlFor = (category, rel) => `/media/${category}/${rel.split(path.sep).map(encodeURIComponent).join('/')}`;
+
+/**
+ * A video next to a song with the same name ("My Girls.opus" + "My Girls.webm") is that song's music video:
+ * the app shows it instead of the visualizer, following the song's clock. Music is local (see bucket.js).
+ */
+async function musicVideo(category, rel, seen) {
+  const full = path.join(config.mediaDir, category, rel);
+  let st;
+  try {
+    st = fs.statSync(full);
+  } catch {
+    return null;
+  }
+  let info;
+  try {
+    info = await probeCached(category, rel, () => full, st);
+  } catch (e) {
+    console.warn(`[library] probe failed for ${category}/${rel}: ${e.message}`);
+    return null;
+  }
+  seen.add(`${category}/${rel}`);
+  if (!info.video) return null;
+  return { file: rel, url: urlFor(category, rel), size: st.size, mtime: Math.floor(st.mtimeMs), duration: info.duration,
+    video: info.video };
+}
+
 /** `source()` returns what ffprobe reads: a local path or a presigned S3 URL (only built on a cache miss). */
 async function probeCached(category, rel, source, st) {
   if (!probeCache) probeCache = readJSONFile(probeCacheFile(), {});
@@ -125,6 +154,11 @@ async function scan() {
       const dir = path.join(config.mediaDir, category);
       const files = remote ? await listRemote(category) : walk(dir).map((rel) => ({ rel }));
       files.sort((a, b) => a.rel.localeCompare(b.rel, undefined, { numeric: true }));
+      // music: videos are the pictures of the songs they're named after (musicVideo())
+      const videos = new Map();
+      if (category === 'music') {
+        for (const f of files) if (VIDEO_EXT.has(path.extname(f.rel).toLowerCase())) videos.set(stem(f.rel), f.rel);
+      }
       for (const f of files) {
         const rel = f.rel;
         const ext = path.extname(rel).toLowerCase();
@@ -154,13 +188,12 @@ async function scan() {
         seen.add(key);
         const id = idFor(key);
         const meta = catalogEntry(catalog, category, rel) || {};
-        const relUrl = rel.split(path.sep).map(encodeURIComponent).join('/');
         const item = {
           id,
           category,
           kind: isVideo ? 'video' : 'audio',
           file: rel,
-          url: `/media/${category}/${relUrl}`,
+          url: urlFor(category, rel),
           size: st.size,
           mtime: Math.floor(st.mtimeMs),
           duration: info.duration,
@@ -183,7 +216,9 @@ async function scan() {
           if (item.album === '.') item.album = '';
           item.track = info.tags.track;
           item.disc = info.tags.disc;
-          item.cover = info.hasCover || findSidecarImage(item) ? `/api/cover/${id}` : null;
+          const mv = videos.has(stem(rel)) ? await musicVideo(category, videos.get(stem(rel)), seen) : null;
+          if (mv) item.musicVideo = mv;
+          item.cover = info.hasCover || findSidecarImage(item) || mv ? `/api/cover/${id}` : null;
           item.scoreUrl = `/api/score/${id}`;
           item.compatUrl = `/api/compat/${id}.flac`;
         }
@@ -199,12 +234,13 @@ async function scan() {
         console.warn(`[library] could not save probe cache: ${e.message}`);
       }
     }
-    const before = state.items.map((i) => `${i.id}:${i.mtime}:${i.size}`).join('|');
+    const sig = (i) => `${i.id}:${i.mtime}:${i.size}${i.musicVideo ? `:${i.musicVideo.mtime}:${i.musicVideo.size}` : ''}`;
+    const before = state.items.map(sig).join('|');
     state.items = items;
     state.byId = new Map(items.map((i) => [i.id, i]));
     state.catalog = catalog;
     state.scannedAt = Date.now();
-    const after = items.map((i) => `${i.id}:${i.mtime}:${i.size}`).join('|');
+    const after = items.map(sig).join('|');
     if (before !== after) for (const fn of listeners) fn(items);
     return items;
   })();

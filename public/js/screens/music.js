@@ -1,8 +1,9 @@
-// Music library, grouped by album. Picking a track opens the visualizer.
+// Music library, grouped by album. Picking a track opens the visualizer (or the song's music video).
 import { h, icon, fmtTime } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
 import { hashString } from '../gl/math.js';
+import { qualityBadge, musicVideoBadge } from '../core/quality.js';
 
 function statusBadge(item) {
   const a = item.analysis || {};
@@ -66,15 +67,17 @@ export function music(root) {
             h('div', { class: 'tracks' }, list.map((t, i) => {
               const auto = first;
               first = false;
-              const badge = h('span', {}, statusBadge(t));
+              const badge = h('span', { class: 'st' }, statusBadge(t));
               rows.set(t.id, { t, badge });
               return h('button', { class: `track ${app.music.item && app.music.item.id === t.id ? 'playing' : ''}`, onclick: () => play(list, i), 'data-autofocus': auto || null },
                 h('span', { class: 'no' }, t.track || i + 1),
                 h('span', { class: 'tt' }, h('div', {}, t.title), t.artist && t.artist !== artist ? h('div', { class: 'sub' }, t.artist) : null),
-                badge, h('span', { class: 'dur' }, fmtTime(t.duration)));
+                h('span', { class: 'badges' }, qualityBadge(t), musicVideoBadge(t), badge),
+                h('span', { class: 'dur' }, fmtTime(t.duration)));
             }))));
       }) : h('div', { class: 'empty' }, 'No music yet. Put FLAC (or any common format) in ', h('code', {}, 'media/music'),
-        ', one folder per album works nicely. Each track is analyzed once in the background (about 10 s per song) so the visuals can be choreographed; until then they react live.')));
+        ', one folder per album works nicely. Each track is analyzed once in the background (about 10 s per song) so the visuals can be choreographed; until then they react live. ',
+        'A video with the same name as a song is its music video, shown instead of the visualizer.')));
   root.appendChild(el);
   focusFirst(el);
   const unsub = app.on('analysis', (d) => {

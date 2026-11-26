@@ -97,6 +97,9 @@ export function checkVideo(item) {
 
 export function canPlayAudioFile(item) {
   const a = (item.probe && item.probe.audio && item.probe.audio[0]) || {};
+  // Ogg needs its own check: a browser can decode Opus in WebM or MP4 and still not open Ogg (older Safari);
+  // those get the lossless FLAC copy instead
+  if (/\.(ogg|oga|opus)$/i.test(item.file)) return !!a.codecString && can(`audio/ogg; codecs="${a.codecString}"`);
   return audioCodecOk(a.codecString) && containerOk(item.file);
 }
 

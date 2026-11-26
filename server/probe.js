@@ -100,6 +100,10 @@ async function probe(file) {
   for (const [k, v] of Object.entries(fmt.tags || {})) tags[k.toLowerCase()] = v;
 
   const vs = streams.find((s) => s.codec_type === 'video' && !(s.disposition || {}).attached_pic);
+  // Ogg (Opus, Vorbis) keeps a song's tags on its audio stream. Only for audio files: in a film, the audio
+  // stream's "title" names the track ("Surround 7.1"), not the film.
+  const a0 = streams.find((s) => s.codec_type === 'audio');
+  if (!vs && a0) for (const [k, v] of Object.entries(a0.tags || {})) if (!(k.toLowerCase() in tags)) tags[k.toLowerCase()] = v;
   const video = vs ? {
     codec: vs.codec_name,
     profile: vs.profile || '',

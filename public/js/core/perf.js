@@ -56,6 +56,14 @@ export function perfOverlay(app) {
       const drop = q ? ` · dropped ${q.droppedVideoFrames} of ${q.totalVideoFrames}` : '';
       lines.push(`video    ${v.videoWidth}×${v.videoHeight}${drop}`);
     }
+    const m = app.music;
+    if (m && m.videoOn && m.video.videoWidth) {
+      // the music video follows the song: how far apart they are and how hard it's catching up
+      const mv = m.video;
+      const q = mv.getVideoPlaybackQuality ? mv.getVideoPlaybackQuality() : null;
+      const drop = q ? ` · dropped ${q.droppedVideoFrames} of ${q.totalVideoFrames}` : '';
+      lines.push(`mvideo   ${mv.videoWidth}×${mv.videoHeight}${drop} · ${m.videoDrift >= 0 ? '+' : ''}${Math.round(m.videoDrift * 1000)} ms from the song · speed ${mv.playbackRate.toFixed(3)}`);
+    }
     const e = app.engine;
     if (e && e.ready) {
       const lat = (e.ctx.baseLatency || 0) + (e.ctx.outputLatency || 0);

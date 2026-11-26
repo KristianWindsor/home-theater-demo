@@ -171,6 +171,7 @@ class App {
     if (this.prevNow) frameClock.tick(now - this.prevNow);
     this.prevNow = now;
     try {
+      if (this.music) this.music.syncVideo();
       this._render(dt);
     } catch (e) {
       if (!this._renderErr) console.error('[frame]', e);
@@ -202,9 +203,16 @@ class App {
     const m = this.music;
     const musicOn = !!(m && m.item);
     if (musicOn) this.viz().update(m.visualTime, dt, m.playing);
+    // a song's music video takes the screen instead of the visualizer (the lights still follow the music)
+    const videoUp = this.mode === 'viz' && musicOn && m.videoOn;
+    if (videoUp !== !!this._videoUp) {
+      this._videoUp = videoUp;
+      m.video.classList.toggle('on', videoUp);
+    }
     if (this.mode === 'viz' && musicOn) {
       const v = this.viz();
-      v.render(W, H);
+      if (videoUp) frameClock.last = null; // nothing on the canvas: the video plays on its own layer
+      else v.render(W, H);
       this.rig.setMode('music');
       this.rig.update(dt, { frame: v.frame, state: v.state });
       return;
@@ -212,9 +220,14 @@ class App {
     if (this.mode === 'room' || this.mode === 'viz') {
       if (musicOn && m.playing) {
         const v = this.viz();
-        v.render(0, 0, this.tvTarget);
+        let tv = null;
+        if (m.videoFrame) tv = this._videoTexture(m.video, m.mv.video.fps); // the room's TV plays the music video
+        if (!tv) {
+          v.render(0, 0, this.tvTarget);
+          tv = this.tvTarget.tex;
+        }
         const c = v.state.chord || [0.2, 0.2, 0.3];
-        this.room.setTVSource(this.tvTarget.tex, c.map((x) => x * (0.15 + 0.5 * v.frame.loud)));
+        this.room.setTVSource(tv, c.map((x) => x * (0.15 + 0.5 * v.frame.loud)));
         if (!this.demo && !this.experience) this.rig.setMode('music');
       } else {
         this.room.setTVSource(null, [0.03, 0.045, 0.08]);
@@ -231,6 +244,38 @@ class App {
     // video mode: nothing to draw on the canvas; keep the virtual lights in "bias" mode
     frameClock.last = null;
     this.rig.update(dt, null);
+  }
+
+  /** The music video's current frame as a texture (for the TV in the room), uploaded once per video frame. */
+  _videoTexture(video, fps) {
+    const gl = this.gl;
+    if (!this._vtex) {
+      this._vtex = { tex: gl.createTexture(), key: '' };
+      gl.bindTexture(gl.TEXTURE_2D, this._vtex.tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); // the TV is small: no shimmer
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    const vt = this._vtex;
+    if (vt.broken === video.currentSrc) return null;
+    const key = `${video.currentSrc}#${Math.floor(video.currentTime * (fps || 30))}`;
+    if (key === vt.key) return vt.tex;
+    gl.bindTexture(gl.TEXTURE_2D, vt.tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // video rows run top-down, GL textures bottom-up
+    try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      vt.key = key;
+    } catch (e) {
+      // e.g. a video from another origin without CORS: the TV shows the visualizer instead
+      console.warn('[tv] the music video can\'t be drawn on the TV', e);
+      vt.broken = video.currentSrc;
+      return null;
+    } finally {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    }
+    return vt.tex;
   }
 
   // ---------------------------------------------------------------- 3D room input

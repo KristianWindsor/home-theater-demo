@@ -14,7 +14,8 @@ A home-theater showcase that runs in a browser on the machine connected to the T
 - **Music visualizer**: each song is analyzed once (beats, downbeats, drums, harmony, key, sections, builds,
   drops). The visuals are then **choreographed for the whole song**, like a pre-programmed light show, and
   rendered live in WebGL with the live spectrum layered on top. Unanalyzed tracks react live until their analysis
-  is done.
+  is done. Songs with a **music video** show the video instead, in sync, while the lights keep following the music.
+  Every song carries a badge for its **audio quality** (Hi-Res, Lossless, or the codec and bitrate).
 
 No accounts, no login, no third-party services. Everything is served from your own box.
 
@@ -68,7 +69,8 @@ where quality is decided.
 media/
   demos/    demo clips (video) or surround music demos (audio, plays with the visualizer)
   movies/   films, MKV or MP4 (sub-folders fine). Optional poster: same name .jpg, or poster.jpg in the folder
-  music/    any common audio format, one folder per album works best; cover.jpg/folder.jpg or embedded art
+  music/    any common audio format, one folder per album works best; cover.jpg/folder.jpg or embedded art.
+            A video with the same name as a song ("My Girls.opus" + "My Girls.webm") is its music video
 ```
 
 New files show up automatically (the library rescans every couple of minutes, or *Settings → Rescan*).
@@ -206,13 +208,61 @@ Tracks that aren't analyzed yet (or a future live source like Spotify) run in **
 tracking from the FFT, no lookahead, and the Director improvises world changes at phrase boundaries. The
 moment the server finishes the analysis the track switches to full choreography without stopping.
 
-Visualizer keys: **Space** play/pause · **←/→** seek · **N/P** next/previous · **V** pick a world (**A** back
-to auto) · **I** analysis HUD · **T** title card · **Esc** back (the music keeps playing; the TV in the 3D room
-shows the visuals and the room's lights follow it).
+Visualizer keys: **Space** play/pause · **←/→** seek · **N/P** next/previous · **V** pick a world, or the music
+video (**A** back to auto, or to the video) · **I** analysis HUD · **T** title card · **Esc** back (the music keeps
+playing; the TV in the 3D room shows the visuals and the room's lights follow it).
 
 **Sync**: TVs delay the picture and receivers delay the sound. *Settings → Audio/video sync* plays a click
 track with a flashing dot through the same path the music uses; slide until they line up. *Settings → Intensity*
 scales how hard the visuals hit; **Reduce flashing** tames full-screen flashes for anyone sensitive to them.
+
+## Music videos
+
+Put a video next to a song under the same name and the song plays with its video instead of the visualizer:
+
+```
+media/music/Animal Collective/My Girls.opus   the song: analyzed, and played through the speakers like any track
+media/music/Animal Collective/My Girls.webm   its music video (picture only; any audio track in it is ignored)
+media/music/Animal Collective/My Girls.jpg    cover art (optional: without it, a frame of the video is used)
+```
+
+- **The song stays the sound.** The video plays muted and follows the song's clock: a small drift is caught up by
+  playing the picture up to 8 % faster or slower, a big one (a seek, a stall) makes it jump. It follows the same
+  clock as the visualizer, so *Settings → Audio/video sync* lines it up too. The *Performance overlay* shows how far
+  apart they are (`mvideo … ms from the song`).
+- **The lights still follow the music's choreography**, and the TV in the 3D room plays the video while you're in
+  the room.
+- **V** switches between the video and the visualizer's worlds; the choice holds for the rest of what's queued.
+- A browser that can't decode the video (VP9/AV1 on an older iPhone) shows the visualizer instead.
+- Videos are stored with the music, on the server's media volume: roughly 50–200 MB for a 1080p video.
+
+**From YouTube**: `scripts/fetch_music_video.py` makes all three files from a YouTube link:
+
+```bash
+python3 scripts/fetch_music_video.py "https://www.youtube.com/watch?v=zol2MJf6XNE" \
+    --artist "Animal Collective" --title "My Girls" --album "Merriweather Post Pavilion" --year 2009 --track 2
+python3 scripts/fetch_music_video.py URL --list    # every stream YouTube has, and which ones it would take
+```
+
+Nothing is re-encoded: it keeps YouTube's best audio (Opus, about 130 kbps; never the dynamic-range-compressed
+copies) and the video at its highest native resolution. YouTube's "Premium" 1080p, a separate encode at about twice
+the usual bitrate, is taken when offered (it downloads without an account); "AI-upscaled" copies of low-resolution
+videos are skipped unless you pass `--upscaled`. At the same size VP9 is preferred, which nearly every GPU decodes
+in hardware (`--codec av1` or `h264` to change that). Needs `yt-dlp` (`brew install yt-dlp`, which brings the `deno`
+it needs for YouTube) and ffmpeg.
+
+## Audio quality
+
+Every song in *Music* and in the visualizer's controls carries a badge for what the file holds:
+
+| Badge | Means |
+|---|---|
+| **Hi-Res 24/96** (gold) | lossless and beyond CD: more than 16 bits or more than 48 kHz (24/48, 24/96, 24/192, DSD) |
+| **Lossless 16/44.1** (blue) | every sample of the master at CD quality (or 16/48) |
+| **Opus 127 kbps**, **AAC 256 kbps**, **MP3 320 kbps** | lossy, by codec and bitrate |
+
+Surround files add their layout (**Hi-Res 5.1 24/48**). Hover a badge for the details. Music videos carry a second
+badge with the video's resolution.
 
 ## The 3D room
 
@@ -310,7 +360,7 @@ server/          zero-dependency Node server: library + ffprobe cache, byte-rang
                  thumbnails/covers, lossless fallbacks, scene saving, server-sent events, S3 + CloudFront
                  signed links for movies kept in a bucket (bucket.js)
 analyzer/        the music analyzer (Python) and its tests
-scripts/         prepare_media.py, make_test_media.py, synth_song.py, render_experience.mjs
+scripts/         prepare_media.py, fetch_music_video.py, make_test_media.py, synth_song.py, render_experience.mjs
 config/          catalog.json (scenes), room.json (3D room)
 public/js/
   core/          router, spatial navigation, API, settings, codec compatibility

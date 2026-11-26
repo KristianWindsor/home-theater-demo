@@ -140,7 +140,7 @@ export function home(root) {
       m.item.cover ? h('img', { src: m.item.cover, alt: '', onerror: (e) => { e.target.style.visibility = 'hidden'; } }) : coverEl(m.item, 'cover-art'),
       h('div', { class: 'np-text' }, h('div', { class: 'np-title' }, m.item.title), h('div', { class: 'np-sub' }, m.item.artist || m.item.album || '')),
       h('button', { class: 'btn btn-icon btn-ghost', onclick: () => m.toggle(), 'aria-label': 'Play or pause' }, icon(m.playing ? 'pause' : 'play')),
-      h('button', { class: 'btn btn-icon btn-ghost', onclick: () => app.router.go(`/viz/${m.item.id}`), 'aria-label': 'Open visualizer' }, icon('eye')),
+      h('button', { class: 'btn btn-icon btn-ghost', onclick: () => app.router.go(`/viz/${m.item.id}`), 'aria-label': m.videoOn ? 'Watch the music video' : 'Open visualizer' }, icon(m.videoOn ? 'film' : 'eye')),
     );
   };
   unsubs.push(app.music.on(() => renderNP()));

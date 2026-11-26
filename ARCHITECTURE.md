@@ -23,6 +23,21 @@ native path, which handles every channel layout and downmix correctly. Music, te
 easter eggs go through the `AudioEngine`, which is what makes per-speaker routing, metering and the
 visualizer tap possible.
 
+## Music videos
+
+A song's music video (`server/library.js` pairs a video with the audio file of the same name, as
+`item.musicVideo`) is a second, muted element: `<video id="musicvideo">`. The `<audio>` element stays the only
+thing that makes sound, so the song's analysis, routing, upmix and FLAC fallback don't change. `MusicPlayer.syncVideo()`
+runs every frame and keeps the picture on `visualTime` (the song's clock minus *Audio/video sync*, the same clock as
+the visualizer): drift under 15 ms is left alone, up to 250 ms is caught up by nudging `playbackRate` (at most ±8 %),
+anything more makes the picture jump, aimed ahead by the measured time a jump takes. Muxing audio and video into one
+element routed through Web Audio would be simpler, but the browser would then sync them itself, before Web Audio's
+output latency, with no way for the A/V setting to correct it.
+
+In the visualizer the video takes the canvas's place (`#musicvideo.on`; the canvas isn't drawn) and the director keeps
+running, so the lights still follow the score. In the room, `App._videoTexture()` uploads each new video frame to the
+TV's texture, which needs the video to be same-origin (music is served by this server, see `bucket.js`).
+
 ## The score (analyzer output)
 
 `format: "kw51-score"` (scores written before the rename say `"marquee-score"`; both load), `version: 1`. Times in seconds.

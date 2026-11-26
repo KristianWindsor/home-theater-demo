@@ -181,13 +181,27 @@ async function poster(req, res, item, query) {
   return thumb(req, res, item, query);
 }
 
-/** GET /api/cover/:id — album art: sidecar image or embedded picture (extracted once). */
+/** GET /api/cover/:id — album art: sidecar image, embedded picture (extracted once) or a frame of its music video. */
 async function cover(req, res, item) {
   if (!item || item.kind !== 'audio') return sendError(req, res, 404, 'not found');
   const side = findSidecarImage(item);
   if (side) {
     res.setHeader('Cache-Control', 'private, max-age=86400');
     return streamFile(req, res, side);
+  }
+  const mv = item.musicVideo;
+  if (!item.probe.hasCover && mv) {
+    const out = path.join(cacheDir('covers'), `${item.id}-v${mv.mtime}.jpg`);
+    if (!exists(out)) {
+      try {
+        const video = { category: item.category, file: mv.file, probe: { video: mv.video } };
+        await thumbLimit(out, () => makeThumb(video, (mv.duration || 0) * 0.3, 960, out));
+      } catch (e) {
+        return sendError(req, res, 404, 'no cover');
+      }
+    }
+    res.setHeader('Cache-Control', 'private, max-age=604800');
+    return streamFile(req, res, out, 'image/jpeg');
   }
   if (!item.probe.hasCover) return sendError(req, res, 404, 'no cover');
   const out = path.join(cacheDir('covers'), `${item.id}-${item.mtime}.jpg`);
