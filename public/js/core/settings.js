@@ -17,6 +17,8 @@ export const DEFAULTS = {
   surroundMap: 'side',     // 7.1 devices: where 5.1 surrounds go (side|back)
   sceneFades: true,
   sceneEnd: 'stop',        // stop | continue | next
+  playerTimeline: 'clip',  // clip (the scene or highlight playing) | film (the whole film)
+  musicView: 'songs',      // songs (one grid) | albums
   showHud: false,
   roomLabels: true,
 };

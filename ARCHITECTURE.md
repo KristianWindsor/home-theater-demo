@@ -140,6 +140,10 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
 - **Rendered, not played.** The worker renders the whole piece offline for this room's speaker angles, a few
   seconds ahead of playback, and streams it; the same code runs in Node (`scripts/render_experience.mjs`), so a
   WAV from the script is the mix the app plays.
+- **Transport.** The page keeps every chunk it has been sent (a 2.5-minute piece is about 170 MB in 5.1), so
+  pausing, restarting and jumping back a chapter replay them at once: `runner.seek(t)` fades out, reschedules the
+  kept chunks from `t` and fades in. A jump past what's rendered waits in a `seeking` state while the worker is
+  given credit up to there. The scenes are pure functions of score time, so the picture follows any jump.
 - **Instruments** (`audio/instruments.js`): Karplus–Strong plucks, modal resonators (wood, glass, metal, bells,
   plates, marimba) with mallet hardness, bowed glass, breath, formant voices/choir, pads, sub pulses, drums,
   glides, noise beds, bubbles, ice chirps, waves, creaks. Levels are normalized so a note at velocity 0.7 sits

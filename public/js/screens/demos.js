@@ -7,8 +7,8 @@ import { EXPERIENCES } from '../experiences/index.js';
 import { videoCard } from './movies.js';
 
 // One card for everything you can start here: icon, name, one line, then length and where it plays.
-function demoCard({ icon: ic, title, line, duration, where, run }, first) {
-  return h('button', { class: 'card demo-card', onclick: run, 'data-autofocus': first || null },
+function demoCard({ id, icon: ic, title, line, duration, where, run }, first) {
+  return h('button', { class: 'card demo-card', onclick: run, 'data-autofocus': first || null, 'data-key': `show:${id}` },
     h('div', { class: 'ico' }, icon(ic)),
     h('div', { class: 'title' }, title),
     h('div', { class: 'line' }, line),
@@ -26,9 +26,9 @@ export function demos(root) {
   const files = app.library.items.filter((i) => i.category === 'demos');
   const vids = files.filter((i) => i.kind === 'video');
   const auds = files.filter((i) => i.kind === 'audio');
-  const builtin = (d) => ({ icon: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration, where: 'In the room', run: () => app.runDemo(d.id) });
+  const builtin = (d) => ({ id: d.id, icon: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration, where: 'In the room', run: () => app.runDemo(d.id) });
   const shows = [
-    ...EXPERIENCES.filter((x) => !x.hidden).map((x) => ({ icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
+    ...EXPERIENCES.filter((x) => !x.hidden).map((x) => ({ id: x.id, icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
     ...BUILTIN_DEMOS.filter((d) => d.show).map(builtin), // short built-in pieces sit with the shows
   ];
   const setup = BUILTIN_DEMOS.filter((d) => !d.show).map(builtin);

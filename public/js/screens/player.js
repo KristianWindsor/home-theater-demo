@@ -1,4 +1,6 @@
-// Video player: scenes, play-all, fades, bookmarking. Audio stays on the browser's native path.
+// Video player: scenes (their short highlight first, the full sequence on request), play-all, fades, bookmarking.
+// The timeline spans the clip that's playing; T (or the Film button) switches it to the whole film.
+// Audio stays on the browser's native path.
 import { h, icon, fmtTime, toast } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
@@ -8,6 +10,12 @@ import { trailerReel } from './trailers.js';
 
 const FADE_IN = 0.8;
 const FADE_OUT = 1.2;
+
+/** What a scene plays: its highlight (a short demo cut) when it has one, unless the full sequence is asked for. */
+export function sceneCut(s, full = false) {
+  const hl = !full && s.highlight;
+  return hl ? { start: hl.start, end: hl.end, cut: 'highlight' } : { start: s.start, end: s.end, cut: s.highlight ? 'full' : null };
+}
 
 // queue: true = several entries that play back to back (Play all scenes, the trailer reel)
 function buildPlaylist(app, arg, q) {
@@ -20,13 +28,13 @@ function buildPlaylist(app, arg, q) {
   }
   const scenes = (item.scenes || []).map((s, i) => ({ ...s, i })).filter((s) => s.start !== null);
   if (q.get('scenes') === 'all') {
-    const list = scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i }));
+    const list = scenes.map((s) => ({ item, ...sceneCut(s), title: s.title, scene: s.i }));
     return { title: item.title, queue: true, list, first: Math.min(Math.max(0, Number(q.get('at')) || 0), Math.max(0, list.length - 1)) };
   }
   if (q.get('scene') !== null) {
     const i = Number(q.get('scene'));
     const s = (item.scenes || [])[i];
-    if (s && s.start !== null) return { title: item.title, list: [{ item, start: s.start, end: s.end, title: s.title, scene: i }], sceneNav: true };
+    if (s && s.start !== null) return { title: item.title, list: [{ item, ...sceneCut(s, q.get('full') === '1'), title: s.title, scene: i }], sceneNav: true };
   }
   return { title: item.title, list: [{ item, start: Number(q.get('t')) || 0, end: null, title: null }] };
 }
@@ -51,15 +59,21 @@ export function player(root, arg, q) {
   let idleTimer = 0;
   let raf = 0;
   let input = null;
+  // the timeline spans the clip that's playing (a scene, its highlight) unless it's switched to the whole film
+  let filmMode = settings.playerTimeline === 'film';
 
   const fade = h('div', { class: 'fade-black', style: { opacity: 1 } });
   const spinner = h('div', { class: 'spinner' });
   const titleEl = h('div', { class: 'p-title' });
   const sceneEl = h('div', { class: 'p-scene' });
-  const timeEl = h('span', { class: 'time' });
+  const timeMain = h('span');
+  const filmTime = h('span', { class: 'film-time' });
+  const timeEl = h('span', { class: 'time' }, timeMain, filmTime);
   const fill = h('div', { class: 'fill' });
   const buf = h('div', { class: 'buf' });
   const timeline = h('div', { class: 'timeline' }, buf, fill);
+  const fullBtn = h('button', { class: 'btn small', onclick: () => fullSequence(false), title: 'Carry on into the whole scene' }, icon('layers'), h('span', { class: 'lbl' }, 'Full sequence'));
+  const modeBtn = h('button', { class: 'btn small', onclick: () => setFilmMode(!filmMode), title: 'Timeline: this clip or the whole film (T)' }, icon('film'), h('span', { class: 'lbl' }, 'Whole film'));
   const playBtn = h('button', { class: 'btn btn-icon', onclick: () => toggle(), 'aria-label': 'Play/pause' }, icon('pause'));
   const vol = h('input', { class: 'vol', type: 'range', min: 0, max: 1, step: 0.01, value: settings.volume,
     oninput: (e) => { video.volume = Number(e.target.value); setSetting('volume', video.volume); } });
@@ -68,7 +82,7 @@ export function player(root, arg, q) {
   const overlay = h('div', { class: 'overlay' },
     h('div', { class: 'p-top' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),
-      h('div', {}, titleEl, sceneEl), h('div', { style: { flex: 1 } }), inputBox),
+      h('div', {}, titleEl, sceneEl), fullBtn, h('div', { style: { flex: 1 } }), inputBox),
     h('div', { class: 'p-bottom' },
       timeline,
       h('div', { class: 'controls' },
@@ -79,6 +93,7 @@ export function player(root, arg, q) {
         h('button', { class: 'btn btn-icon', onclick: () => jumpScene(1), 'aria-label': 'Next scene' }, icon('next')),
         timeEl,
         h('div', { class: 'spacer' }),
+        modeBtn,
         h('button', { class: 'btn small', onclick: () => bookmark(), title: 'Add a scene starting now (B)' }, icon('marker'), 'Mark scene'),
         icon('volume', 'vol-icon'), vol,
         h('button', { class: 'btn btn-icon', onclick: () => toggleFs(), 'aria-label': 'Fullscreen' }, icon('full')))));
@@ -120,23 +135,76 @@ export function player(root, arg, q) {
   };
   for (const [k, fn] of Object.entries(onEvent)) video.addEventListener(k, fn);
 
+  const hasClip = () => !!entry && (entry.start > 0 || !!entry.end);
+  const filmLength = () => video.duration || (entry && entry.item.duration) || 1;
+  /** The stretch of film the timeline shows: the clip playing, or the whole film. */
+  function range() {
+    const d = filmLength();
+    if (filmMode || !hasClip()) return [0, d];
+    return [entry.start || 0, Math.min(d, entry.end ?? d)];
+  }
+
   function drawTimeline() {
-    const d = video.duration || (entry && entry.item.duration) || 1;
+    const [a, b] = range();
+    const span = Math.max(0.001, b - a);
+    const pct = (t) => `${Math.max(0, Math.min(100, ((t - a) / span) * 100))}%`;
     timeline.querySelectorAll('.mark, .span').forEach((m) => m.remove());
-    const scenes = (entry && entry.item.scenes) || [];
-    for (const s of scenes) {
-      if (s.start === null) continue;
-      if (s.end) timeline.appendChild(h('div', { class: 'span', style: { left: `${(s.start / d) * 100}%`, width: `${((s.end - s.start) / d) * 100}%` } }));
-      timeline.appendChild(h('div', { class: 'mark', title: s.title, style: { left: `${(s.start / d) * 100}%` } }));
+    const clip = !filmMode && hasClip();
+    timeline.classList.toggle('clip', clip);
+    if (!clip) {
+      // the whole film: every scene marked
+      for (const s of (entry && entry.item.scenes) || []) {
+        if (s.start === null) continue;
+        if (s.end) timeline.appendChild(h('div', { class: 'span', style: { left: pct(s.start), width: `${((s.end - s.start) / span) * 100}%` } }));
+        timeline.appendChild(h('div', { class: 'mark', title: s.title, style: { left: pct(s.start) } }));
+      }
+    } else if (entry.cut === 'full') {
+      // the full sequence: where its highlight sits
+      const hl = ((entry.item.scenes || [])[entry.scene] || {}).highlight;
+      if (hl) timeline.appendChild(h('div', { class: 'span', title: 'Highlight', style: { left: pct(hl.start), width: `${((hl.end - hl.start) / span) * 100}%` } }));
     }
     try {
-      if (video.buffered.length) buf.style.width = `${(video.buffered.end(video.buffered.length - 1) / d) * 100}%`;
+      if (video.buffered.length) buf.style.width = pct(video.buffered.end(video.buffered.length - 1));
     } catch { /* ignore */ }
+    modeBtn.hidden = !hasClip();
+    modeBtn.classList.toggle('active', filmMode);
+    modeBtn.setAttribute('aria-pressed', String(filmMode));
+    fullBtn.hidden = !entry || entry.cut !== 'highlight';
   }
+
+  function setFilmMode(on, remember = true) {
+    filmMode = on;
+    if (remember) setSetting('playerTimeline', on ? 'film' : 'clip');
+    drawTimeline();
+    showUi();
+  }
+
+  /** From a scene's highlight to the whole scene: carry on from here, or (fromStart) play it from its beginning. */
+  function fullSequence(fromStart) {
+    const s = entry && (entry.item.scenes || [])[entry.scene];
+    if (!s || entry.cut !== 'highlight') return;
+    pl.list[idx] = { ...entry, start: s.start, end: s.end, cut: 'full' };
+    if (fromStart) return load(idx);
+    entry = pl.list[idx];
+    ending = false;
+    app.router.replaceQuiet(`/play/${encodeURIComponent(entry.item.id)}?scene=${entry.scene}&full=1`);
+    sceneEl.textContent = sceneLine();
+    drawTimeline();
+    showUi();
+  }
+
+  const sceneLine = () => {
+    const name = entry.title && entry.title !== entry.item.title ? entry.title : '';
+    if (!name) return '';
+    if (entry.cut === 'highlight') return `${name} · highlight`;
+    if (entry.cut === 'full') return `${name} · full sequence`;
+    return name;
+  };
 
   timeline.addEventListener('pointerdown', (e) => {
     const r = timeline.getBoundingClientRect();
-    const seekTo = (x) => { video.currentTime = Math.max(0, Math.min(1, (x - r.left) / r.width)) * (video.duration || 0); };
+    const [a, b] = range();
+    const seekTo = (x) => { video.currentTime = a + Math.max(0, Math.min(1, (x - r.left) / r.width)) * (b - a); };
     seekTo(e.clientX);
     const move = (ev) => seekTo(ev.clientX);
     const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
@@ -166,14 +234,14 @@ export function player(root, arg, q) {
     const id = encodeURIComponent(entry.item.id);
     if (pl.reel) app.router.replaceQuiet(`/play/${id}?reel=${pl.reel}`);
     else if (pl.queue) app.router.replaceQuiet(`/play/${id}?scenes=all&at=${i}`);
-    else if (entry.scene !== undefined && entry.scene !== null) app.router.replaceQuiet(`/play/${id}?scene=${entry.scene}`);
+    else if (entry.scene !== undefined && entry.scene !== null) app.router.replaceQuiet(`/play/${id}?scene=${entry.scene}${entry.cut === 'full' ? '&full=1' : ''}`);
     endCard.style.display = 'none';
     if (pl.reel) {
       titleEl.textContent = entry.item.title;
       sceneEl.textContent = `${pl.title} · ${i + 1} of ${pl.list.length}`;
     } else {
       titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
-      sceneEl.textContent = entry.title && entry.title !== entry.item.title ? entry.title : '';
+      sceneEl.textContent = sceneLine();
     }
     const fades = settings.sceneFades && (entry.start > 0 || entry.end);
     fade.style.transition = 'none';
@@ -221,12 +289,25 @@ export function player(root, arg, q) {
       h('h2', {}, pl.reel ? pl.title : entry.title || 'Done'),
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-primary', onclick: () => load(pl.reel ? 0 : idx), 'data-autofocus': true }, icon('refresh'), pl.reel ? 'Play again' : 'Replay'),
+        entry.cut === 'highlight' ? h('button', { class: 'btn', onclick: () => fullSequence(true) }, icon('layers'), 'Full sequence') : null,
         nextSceneOf(entry) ? h('button', { class: 'btn', onclick: () => jumpScene(1) }, icon('next'), 'Next scene') : null,
-        pl.reel ? null : h('button', { class: 'btn', onclick: () => { endCard.style.display = 'none'; fade.style.opacity = 0; video.volume = settings.volume; entry = { ...entry, end: null }; ending = false; video.play(); } }, icon('play'), 'Keep watching'),
+        pl.reel ? null : h('button', { class: 'btn', onclick: () => keepWatching() }, icon('play'), 'Keep watching'),
         h('button', { class: 'btn', onclick: () => app.router.back() }, icon('back'), 'Back'))));
     endCard.style.display = '';
     const f = endCard.querySelector('[data-autofocus]');
     if (f) f.focus();
+  }
+
+  // past the end of the clip, into the rest of the film: the timeline goes to the whole film too
+  function keepWatching() {
+    endCard.style.display = 'none';
+    fade.style.opacity = 0;
+    video.volume = settings.volume;
+    entry = { ...entry, end: null };
+    pl.list[idx] = entry;
+    ending = false;
+    setFilmMode(true, false);
+    video.play();
   }
 
   function nextSceneOf(e, dir = 1) {
@@ -248,7 +329,7 @@ export function player(root, arg, q) {
       if (fromEnd) app.router.back();
       return;
     }
-    pl.list[0] = { item: entry.item, start: s.start, end: s.end, title: s.title, scene: s.i };
+    pl.list[0] = { item: entry.item, ...sceneCut(s), title: s.title, scene: s.i };
     pl.sceneNav = true;
     load(0);
   }
@@ -327,9 +408,20 @@ export function player(root, arg, q) {
     if (entry) {
       const d = video.duration || entry.item.duration || 0;
       const t = video.currentTime;
-      fill.style.width = `${d ? (t / d) * 100 : 0}%`;
-      const rel = entry.end ? ` · scene ${fmtTime(Math.max(0, entry.end - t))} left` : '';
-      timeEl.textContent = `${fmtTime(t, d >= 3600)} / ${fmtTime(d, d >= 3600)}${rel}`;
+      const long = d >= 3600;
+      const [a, b] = range();
+      fill.style.width = `${Math.max(0, Math.min(100, ((t - a) / Math.max(0.001, b - a)) * 100))}%`;
+      let text, film = '';
+      if (!filmMode && hasClip()) {
+        // clip time, with where it is in the film beside it
+        text = `${fmtTime(Math.max(0, t - a))} / ${fmtTime(b - a)}`;
+        film = `${fmtTime(t, long)} in the film`;
+      } else {
+        const rel = entry.end ? ` · scene ${fmtTime(Math.max(0, entry.end - t))} left` : '';
+        text = `${fmtTime(t, long)} / ${fmtTime(d, long)}${rel}`;
+      }
+      if (timeMain.textContent !== text) timeMain.textContent = text;
+      if (filmTime.textContent !== film) filmTime.textContent = film;
       if (entry.end && !ending && t >= entry.end - (settings.sceneFades ? FADE_OUT : 0)) finishScene();
     }
     raf = requestAnimationFrame(tick);
@@ -370,6 +462,9 @@ export function player(root, arg, q) {
         case 'n': case 'N': case 'PageDown': case 'MediaTrackNext': jumpScene(1); return true;
         case 'p': case 'P': case 'PageUp': case 'MediaTrackPrevious': jumpScene(-1); return true;
         case 'f': case 'F': toggleFs(); return true;
+        case 't': case 'T':
+          if (!hasClip()) return false;
+          setFilmMode(!filmMode); return true;
         case 'b': case 'B': bookmark(); return true;
         case 'e': case 'E': setEnd(); return true;
         case '+': case '=': video.volume = Math.min(1, video.volume + 0.05); setSetting('volume', video.volume); vol.value = video.volume; return true;

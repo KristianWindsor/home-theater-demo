@@ -35,7 +35,7 @@ function topbar(title, ...right) {
 }
 
 export function videoCard(item, onclick, auto = false) {
-  return h('button', { class: 'card', onclick, 'data-autofocus': auto || null },
+  return h('button', { class: 'card', onclick, 'data-autofocus': auto || null, 'data-key': `item:${item.id}` },
     h('div', { class: 'thumb' },
       h('img', { src: `${item.poster}?w=640`, alt: '', loading: 'lazy', onerror: (e) => { e.target.style.opacity = 0; } }),
       h('div', { class: 'badges' }, badges(item))),
@@ -50,23 +50,32 @@ function sceneThumbTime(s) {
   return s.start + Math.min(20, Math.max(1.5, len * 0.25));
 }
 
-/** One scene as a tile: click to play just that scene. */
+/**
+ * One scene as a tile: click to play it. A long scene with a highlight (a short demo cut) plays that, and the tile
+ * says how long it is; the full sequence is a button away in the player.
+ */
 function sceneTile(item, s, i, { autofocus = false } = {}) {
   const app = ctx.app;
   const has = s.start !== null;
   const long = item.duration >= 3600;
+  const hl = has ? s.highlight : null;
+  const full = has && s.end !== null ? s.end - s.start : null;
+  const plays = hl ? hl.end - hl.start : full;
   return h('button', {
     class: 'card scene',
     'data-autofocus': autofocus || null,
+    'data-key': `scene:${item.id}:${i}`,
     onclick: () => (has ? app.router.go(`/play/${item.id}?scene=${i}`) : toast('This scene has no start time yet. Set one in Edit scenes or with B in the player.', 'warn')),
   },
   h('div', { class: 'thumb' },
-    has ? h('img', { src: api.thumb(item.id, sceneThumbTime(s), 640), alt: '', loading: 'lazy' }) : null,
+    has ? h('img', { src: api.thumb(item.id, sceneThumbTime(hl || s), 640), alt: '', loading: 'lazy' }) : null,
     s.star ? h('span', { class: 'star' }, icon('starFill')) : null,
-    h('span', { class: 'badge time' }, has ? `${fmtTime(s.start, long)}${s.end ? ` – ${fmtTime(s.end, long)}` : ''}` : 'no time yet')),
+    hl ? h('span', { class: 'badge gold hl' }, 'Highlight') : null,
+    h('span', { class: 'badge time' }, !has ? 'no time yet' : plays !== null ? fmtTime(plays) : `from ${fmtTime(s.start, long)}`)),
   h('div', { class: 'body' },
     h('div', { class: 'title' }, s.title),
-    s.note ? h('div', { class: 'note' }, s.note) : null));
+    hl ? h('div', { class: 'meta' }, `Full sequence ${fmtTime(full)}`) : null,
+    (hl && hl.note) || s.note ? h('div', { class: 'note' }, (hl && hl.note) || s.note) : null));
 }
 
 /**
@@ -101,8 +110,8 @@ function shelf(item, { autofocus = false, observers }) {
       h('div', { class: 'badges' }, badges(item)),
       h('div', { class: 'spacer' }),
       h('div', { class: 'shelf-actions' },
-        h('button', { class: 'btn', onclick: () => app.router.go(`/play/${item.id}?t=0`) }, icon('play'), h('span', { class: 'lbl' }, 'Play film')),
-        h('button', { class: 'btn', onclick: () => app.router.go(`/movie/${item.id}`) }, icon('info'), h('span', { class: 'lbl' }, 'Details')),
+        h('button', { class: 'btn', onclick: () => app.router.go(`/play/${item.id}?t=0`), 'data-key': `film:${item.id}` }, icon('play'), h('span', { class: 'lbl' }, 'Play film')),
+        h('button', { class: 'btn', onclick: () => app.router.go(`/movie/${item.id}`), 'data-key': `details:${item.id}` }, icon('info'), h('span', { class: 'lbl' }, 'Details')),
         prev, next)),
     row);
 }

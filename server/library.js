@@ -69,6 +69,18 @@ function yearFrom(rel) {
   return m ? Number(m[1]) : null;
 }
 
+/**
+ * A scene's highlight: a short cut inside it ({ start, end, note }) that its tile plays first, for when the whole
+ * sequence is too long a detour in a demo. Dropped unless it lies inside the scene and runs at least 10 s.
+ */
+function normHighlight(h, start, end, duration) {
+  if (!h || typeof h !== 'object' || start === null) return null;
+  const hs = parseTime(h.start), he = parseTime(h.end);
+  const last = end ?? duration ?? Infinity;
+  if (hs === null || he === null || hs < start || he > last || he - hs < 10) return null;
+  return { start: hs, end: he, note: h.note ? String(h.note).slice(0, 300) : '' };
+}
+
 function normScenes(list, duration) {
   if (!Array.isArray(list)) return [];
   return list.map((s, i) => {
@@ -76,6 +88,7 @@ function normScenes(list, duration) {
     let end = parseTime(s.end);
     if (end !== null && start !== null && end <= start) end = null;
     if (end !== null && duration) end = Math.min(end, duration);
+    const highlight = normHighlight(s.highlight, start, end, duration);
     return {
       id: s.id || `s${i + 1}`,
       title: String(s.title || `Scene ${i + 1}`).slice(0, 200),
@@ -83,6 +96,7 @@ function normScenes(list, duration) {
       end,
       note: s.note ? String(s.note).slice(0, 1000) : '',
       star: !!s.star,
+      ...(highlight ? { highlight } : {}),
     };
   });
 }

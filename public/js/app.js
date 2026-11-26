@@ -12,6 +12,7 @@ import { api, events } from './core/api.js';
 import { settings, onSetting } from './core/settings.js';
 import { Router } from './core/router.js';
 import { installNav } from './core/nav.js';
+import { installNowPlaying } from './core/nowplaying.js';
 import { toast, TOUCH_ONLY } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
@@ -80,6 +81,7 @@ class App {
     this.tvTarget = new Target(this.gl, 640, 360, { hdr: false });
     perfOverlay(this);
     this.router = new Router(document.getElementById('ui'), screens);
+    installNowPlaying(this);
     events({
       analysis: (d) => {
         const item = this.items.get(d.id);
@@ -356,7 +358,7 @@ class App {
         if (this.router.current && this.router.current.name !== 'home') {
           e.preventDefault();
           this.router.back();
-        } else if (this.demo) this.stopDemo();
+        } else if (this.demo) this.finishDemo();
       } else if (e.key === 'MediaPlayPause') this.music.toggle();
       else if (e.key === 'MediaTrackNext') this.music.next();
       else if (e.key === 'MediaTrackPrevious') this.music.prev();
@@ -402,6 +404,7 @@ class App {
     if (!def) return;
     if (!this.engine.ready) await this.enter();
     if (!this.synth) return;
+    const prevFrom = this.demo ? this.demo.from : null; // Restart keeps where it came from
     this.stopExperience();
     this.stopDemo();
     if (this.music.playing) this.music.pause();
@@ -435,7 +438,7 @@ class App {
       } else if (type === 'sweep') {
         status.text = `${d.freq.toFixed(0)} Hz`;
       } else if (type === 'end') {
-        this.stopDemo();
+        this.finishDemo();
         return;
       }
       // only when what the banner shows changed: the orbit and the storm emit every frame, and re-rendering the
@@ -443,10 +446,21 @@ class App {
       if (status.text !== before) this.emit('demo', status);
     };
     const engine = def.show ? this.engine.onBus('show') : this.engine; // shows play at the Shows level
-    this.demo = { def, ctl: def.run({ engine, synth: this.synth, emit, roles, ring }), status };
+    // where it was started (the Demos page): it goes back there when it ends, onto the same tile
+    const here = this.router.current;
+    const from = here && here.name !== 'home' ? here.path : prevFrom;
+    this.demo = { def, ctl: def.run({ engine, synth: this.synth, emit, roles, ring }), status, from };
     this.rig.setMode('ambient');
     this.emit('demo', status);
-    if (!this.router.current || this.router.current.name !== 'home') this.router.go('/');
+    if (!here || here.name !== 'home') this.router.go('/');
+  }
+
+  /** A built-in demo ended, or Stop was pressed: back to where it was started. */
+  finishDemo() {
+    const d = this.demo;
+    if (!d) return;
+    this.stopDemo();
+    if (d.from && this.router.current && this.router.current.name === 'home') this.router.back(d.from);
   }
 
   // ---------------------------------------------------------------- experiences
@@ -456,6 +470,7 @@ class App {
     if (!def) return null;
     if (!this.engine.ready) await this.enter();
     if (!this.engine.ready) return null;
+    const prevFrom = this.experience ? this.experience.from : null; // a show started from a show (the cat's dream) returns where that one would
     this.stopDemo();
     this.stopExperience();
     if (this.music.playing) this.music.pause();
@@ -466,7 +481,7 @@ class App {
     this.rig.setMode('script');
     run.on('end', () => {
       if (this.experience !== run) return;
-      if (run.kind === 'room') this.stopExperience();
+      if (run.kind === 'room') this.finishExperience();
     });
     run.on('state', (st) => {
       if (st === 'error' && this.experience === run) toast(`${def.title} could not start: ${run.error}`, 'bad', 8000);
@@ -474,6 +489,7 @@ class App {
     this.emit('experience', run);
     const route = def.kind === 'room' ? '/' : `/x/${id}`;
     const here = this.router.current ? this.router.current.path : null;
+    run.from = here && here !== route ? here : prevFrom; // a room show goes back there when it ends
     if (here !== route) this.router.go(route);
     run.start().catch((e) => {
       console.error('[experience]', e);
@@ -483,6 +499,14 @@ class App {
       }
     });
     return run;
+  }
+
+  /** A room show ended, or Stop was pressed: back to where it was started (the Demos page, its tile focused). */
+  finishExperience() {
+    const run = this.experience;
+    if (!run) return;
+    this.stopExperience();
+    if (run.kind === 'room' && run.from && this.router.current && this.router.current.name === 'home') this.router.back(run.from);
   }
 
   stopExperience() {

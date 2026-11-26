@@ -1,20 +1,20 @@
 {
-  "_comment": "Curated metadata, keyed by file name (or path relative to the category folder). Times can be seconds or h:mm:ss. Scenes with \"start\": null show up as 'no time yet': play the movie, press B at the right moment and the time is filled in (E sets the end). Scene edits made in the app are saved to DATA_DIR/scenes.json and win over this file.",
+  "_comment": "Curated metadata, keyed by file name (or path relative to the category folder). Times can be seconds or h:mm:ss. A long scene can carry a \"highlight\" ({ start, end, note }): a 2-3 minute cut inside it that its tile plays first, with the full sequence a button away. Scenes with \"start\": null show up as 'no time yet': play the movie, press B at the right moment and the time is filled in (E sets the end). Scene edits made in the app are saved to DATA_DIR/scenes.json and win over this file.",
   "movies": {
     "The Dark Knight (2008).mp4": {
       "title": "The Dark Knight",
       "year": 2008,
       "description": "The whole film, with shortcuts to the big set pieces. Starred scenes are the loudest action with the biggest score moments. Times are frame-checked against the 2:32:12 release, where the title smoke starts at 0:00:43; if your copy's studio logos run longer or shorter, shift every time by the difference.",
       "scenes": [
-        { "title": "Opening bank heist", "start": "0:00:42", "end": "0:06:23", "star": true, "note": "From the bat logo in the smoke to the bus pulling away." },
+        { "title": "Opening bank heist", "start": "0:00:42", "end": "0:06:23", "star": true, "note": "From the bat logo in the smoke to the bus pulling away.", "highlight": { "start": "0:03:47.5", "end": "0:06:23", "note": "The vault, the crew turning on each other, a school bus through the wall, and the Joker unmasked." } },
         { "title": "Parking garage: Scarecrow and the copycats", "start": "0:07:23", "end": "0:10:36" },
         { "title": "Hong Kong extraction", "start": "0:34:00", "end": "0:37:49", "star": true, "note": "The jump from the IFC tower, the skyhook and the C-130, then Lau delivered to Gordon." },
-        { "title": "Armored truck chase and the Batpod", "start": "1:14:25", "end": "1:23:00", "star": true, "note": "Lower Fifth, the Tumbler crash, the Batpod and the truck flip." },
-        { "title": "Interrogation room", "start": "1:25:32", "end": "1:30:38" },
-        { "title": "Race to save Rachel", "start": "1:30:38", "end": "1:36:13" },
+        { "title": "Armored truck chase and the Batpod", "start": "1:14:25", "end": "1:23:00", "star": true, "note": "Lower Fifth, the Tumbler crash, the Batpod and the truck flip.", "highlight": { "start": "1:18:47.5", "end": "1:21:46", "note": "\"Eject sequence initiated\": the Batpod bursts out of the Tumbler, the chase, and the truck flips end over end." } },
+        { "title": "Interrogation room", "start": "1:25:32", "end": "1:30:38", "highlight": { "start": "1:28:48.5", "end": "1:30:38", "note": "Batman loses his temper, and the Joker makes him choose: Harvey or Rachel." } },
+        { "title": "Race to save Rachel", "start": "1:30:38", "end": "1:36:13", "highlight": { "start": "1:33:50.5", "end": "1:36:13", "note": "The bomb goes off in the station, Rachel's last words, the warehouse explosion." } },
         { "title": "Hospital explosion", "start": "1:51:52", "end": "1:52:54.5", "star": true, "note": "One minute, and the whole building comes down. A good subwoofer test." },
-        { "title": "The ferries", "start": "1:59:19", "end": "2:04:38" },
-        { "title": "Prewitt Building finale", "start": "2:04:38", "end": "2:15:22.5" },
+        { "title": "The ferries", "start": "1:59:19", "end": "2:04:38", "highlight": { "start": "2:00:50.5", "end": "2:02:51", "note": "The detonators are found, the Joker's announcement, and the vote." } },
+        { "title": "Prewitt Building finale", "start": "2:04:38", "end": "2:15:22.5", "highlight": { "start": "2:05:42", "end": "2:07:29.5", "note": "SWAT moves in; Batman sees the trap with the sonar and fights his way up." } },
         { "title": "Ending: a dark knight", "start": "2:21:38", "end": "2:24:31", "star": true, "note": "Gordon's speech over the final chase, through the title card." }
       ]
     },
@@ -23,13 +23,13 @@
       "year": 1999,
       "description": "The 4K 60 fps edition with the 7.1 mix. Starred: the podrace, the Battle of Naboo and Duel of the Fates. Times are frame-checked against this 2:16:12 copy.",
       "scenes": [
-        { "title": "Opening crawl and the Jedi aboard the Trade Federation ship", "start": "0:00:21", "end": "0:07:56", "note": "The crawl, the gas, the droidekas, and the escape down the ventilation shaft." },
+        { "title": "Opening crawl and the Jedi aboard the Trade Federation ship", "start": "0:00:21", "end": "0:07:56", "note": "The crawl, the gas, the droidekas, and the escape down the ventilation shaft.", "highlight": { "start": "0:00:21", "end": "0:02:41", "note": "The crawl and the main theme, then the cruiser arrives at the Trade Federation ship." } },
         { "title": "Through the planet core in the bongo", "start": "0:17:14", "end": "0:20:41", "note": "\"There's always a bigger fish.\"" },
         { "title": "Escape from Naboo and the blockade", "start": "0:24:46", "end": "0:26:35", "note": "Out of the Theed hangar, through the blockade, R2 fixes the shield." },
-        { "title": "Boonta Eve podrace", "start": "0:55:05", "end": "1:10:07", "star": true, "note": "From the flyover of the arena to Anakin carried off by the crowd: the grid, the stall, Tusken Raiders, Sebulba, the finish." },
+        { "title": "Boonta Eve podrace", "start": "0:55:05", "end": "1:10:07", "star": true, "note": "From the flyover of the arena to Anakin carried off by the crowd: the grid, the stall, Tusken Raiders, Sebulba, the finish.", "highlight": { "start": "0:58:56", "end": "1:01:50", "note": "\"Start your engines\": the grid fires up, Anakin stalls, then launches after the pack." } },
         { "title": "Darth Maul ambushes Qui-Gon on Tatooine", "start": "1:16:21", "end": "1:18:05" },
-        { "title": "The Battle of Naboo begins", "start": "1:45:08", "end": "1:50:25", "star": true, "note": "The Gungan army rises out of the swamp, the shields go up, the droid army unfolds." },
-        { "title": "Duel of the Fates", "start": "1:50:25", "end": "2:05:15", "star": true, "note": "Maul in the hangar, the generator room duel, the space battle and the control ship, intercut to Qui-Gon's last words." },
+        { "title": "The Battle of Naboo begins", "start": "1:45:08", "end": "1:50:25", "star": true, "note": "The Gungan army rises out of the swamp, the shields go up, the droid army unfolds.", "highlight": { "start": "1:48:19.5", "end": "1:50:09.5", "note": "The droid army unfolds on the plain, the Gungan shield goes up, the droids march through it." } },
+        { "title": "Duel of the Fates", "start": "1:50:25", "end": "2:05:15", "star": true, "note": "Maul in the hangar, the generator room duel, the space battle and the control ship, intercut to Qui-Gon's last words.", "highlight": { "start": "1:50:25", "end": "1:52:46", "note": "Maul in the hangar, Anakin's fighter takes off, and the duel moves onto the catwalks." } },
         { "title": "Victory parade", "start": "2:08:29", "end": "2:09:53" }
       ]
     },
@@ -39,10 +39,10 @@
       "description": "4K HDR with the 7.1 mix. Starred: Monaco, the drones turning on the Expo, and the garden fight. Times are frame-checked against this 2:04:37 copy.",
       "scenes": [
         { "title": "Shoot to Thrill: Iron Man drops into the Stark Expo", "start": "0:05:01", "end": "0:07:17" },
-        { "title": "Monaco: Whiplash on the track", "start": "0:30:05", "end": "0:37:15", "star": true, "note": "The race, the electric whips, the suitcase suit." },
+        { "title": "Monaco: Whiplash on the track", "start": "0:30:05", "end": "0:37:15", "star": true, "note": "The race, the electric whips, the suitcase suit.", "highlight": { "start": "0:34:20", "end": "0:37:15", "note": "Happy rams Whiplash with the Rolls, the suitcase suit, and the fight on the track." } },
         { "title": "Birthday party: Iron Man vs. War Machine", "start": "0:56:24", "end": "0:59:33" },
-        { "title": "Hammer's drones turn on the Expo", "start": "1:35:23", "end": "1:44:16", "star": true, "note": "War Machine is hijacked, the chase over Flushing Meadows, Black Widow in the hallway." },
-        { "title": "Garden fight: Iron Man and War Machine vs. the drones", "start": "1:44:16", "end": "1:52:14", "star": true, "note": "Crash-landing in the Japanese garden, the drones close in, Whiplash, the explosion, and the rescue of Pepper." }
+        { "title": "Hammer's drones turn on the Expo", "start": "1:35:23", "end": "1:44:16", "star": true, "note": "War Machine is hijacked, the chase over Flushing Meadows, Black Widow in the hallway.", "highlight": { "start": "1:39:00", "end": "1:41:20", "note": "The drones turn on the crowd, Iron Man saves a boy in an Iron Man mask, and the chase ends in an explosion." } },
+        { "title": "Garden fight: Iron Man and War Machine vs. the drones", "start": "1:44:16", "end": "1:52:14", "star": true, "note": "Crash-landing in the Japanese garden, the drones close in, Whiplash, the explosion, and the rescue of Pepper.", "highlight": { "start": "1:49:44", "end": "1:52:11.5", "note": "Whiplash arrives, the crossed repulsor beams, and the drones blow up across the Expo." } }
       ]
     },
     "Countdown Test Film (2026).mp4": {

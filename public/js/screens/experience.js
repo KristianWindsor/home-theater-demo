@@ -1,7 +1,9 @@
-// Full-screen experiences (#/x/<id>): title card, quiet controls, a live speaker map, end card.
-import { h, icon, fmtTime } from '../core/dom.js';
+// Full-screen experiences (#/x/<id>): title card, quiet controls (pause, chapters, restart, a seekable timeline),
+// a live speaker map, end card.
+import { h, icon } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { EXPERIENCE_BY_ID } from '../experiences/index.js';
+import { showTransport, showKey } from './transport.js';
 
 export function experience(root, id) {
   const app = ctx.app;
@@ -20,23 +22,21 @@ export function experience(root, id) {
   const load = h('div', { class: 'xp-load' }, h('div', { class: 'xp-load-track' }, loadBar), loadText);
   const title = h('div', { class: 'xp-title' }, h('div', { class: 'xp-t1' }, def.title), h('div', { class: 'xp-t2' }, def.tagline), load,
     h('div', { class: 'xp-rotate' }, 'Turn your phone sideways for the full picture'));
-  const chapter = h('div', { class: 'xp-chapter' });
-  const time = h('span', { class: 'mono muted' });
-  const fill = h('div', { class: 'fill' });
-  const bar = h('div', { class: 'timeline xp-bar' }, fill);
+  const tp = showTransport();
   const map = speakerMap(app);
   const layout = h('span', { class: 'badge' });
   const controls = h('div', { class: 'xp-controls' },
     h('div', { class: 'xp-row' },
       h('button', { class: 'btn btn-icon', onclick: () => leave(), 'aria-label': 'Stop', 'data-autofocus': true }, icon('back')),
-      h('div', { class: 'xp-name' }, h('div', {}, def.title), chapter),
-      h('div', { class: 'spacer' }), layout, time),
-    bar);
+      h('div', { class: 'xp-name' }, h('div', {}, def.title), tp.chapter),
+      h('div', { class: 'spacer' }), h('div', { class: 'xp-transport' }, ...tp.buttons), layout, tp.time),
+    tp.bar);
   const endCard = h('div', { class: 'end-card', style: { display: 'none' } },
     h('div', { class: 'box' },
       h('h2', {}, def.title),
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-primary', onclick: () => replay() }, icon('refresh'), 'Play again'),
+        h('button', { class: 'btn', onclick: () => replayLast() }, icon('prev'), 'Last chapter'),
         h('button', { class: 'btn', onclick: () => leave() }, icon('back'), 'Back'))));
   const el = h('div', { class: 'screen xp' }, title, h('div', { class: 'xp-map' }, map.el), controls, endCard);
   root.appendChild(el);
@@ -61,9 +61,17 @@ export function experience(root, id) {
     app.router.back('/demos');
   }
 
+  // the audio is kept, so playing again (or the last chapter again) starts at once
   function replay() {
     endCard.style.display = 'none';
-    app.runExperience(id).then((r) => attach(r));
+    if (run && run.state === 'ended') run.restart();
+    else app.runExperience(id).then((r) => attach(r));
+  }
+
+  function replayLast() {
+    endCard.style.display = 'none';
+    if (run && run.state === 'ended' && run.chapters.length) run.seek(run.chapters[run.chapters.length - 1].t, true);
+    else replay();
   }
 
   function attach(r) {
@@ -75,12 +83,18 @@ export function experience(root, id) {
       loadBar.style.width = `${Math.round(p * 100)}%`;
       loadText.textContent = `Composing the sound for your ${app.engine.layoutName} speakers  ${Math.round(p * 100)}%`;
     }));
+    tp.attach(run);
+    let started = false;
     unsubs.push(run.on('state', (st) => {
-      if (st === 'playing') {
+      if (st === 'playing' && !started) {
+        started = true;
         load.style.display = 'none';
         setTimeout(() => title.classList.add('hide'), 5200);
         layout.textContent = app.engine.channels >= 6 ? app.engine.layoutName : `${app.engine.layoutName} (folded down)`;
-        drawChapters();
+        tp.drawMarks();
+        showUi();
+      } else if (st === 'playing' || st === 'paused' || st === 'seeking') {
+        endCard.style.display = 'none';
         showUi();
       } else if (st === 'ended') {
         endCard.style.display = '';
@@ -94,26 +108,10 @@ export function experience(root, id) {
     loadText.textContent = `Composing the sound for your ${app.engine.ready ? app.engine.layoutName : ''} speakers`;
   }
 
-  function drawChapters() {
-    for (const m of bar.querySelectorAll('.mark')) m.remove();
-    if (!run || !run.score) return;
-    for (const c of run.score.chapters) {
-      bar.appendChild(h('div', { class: 'mark', title: c.title, style: { left: `${(c.t / run.duration) * 100}%` } }));
-    }
-  }
-
   const tick = () => {
     raf = requestAnimationFrame(tick);
     if (!run) return;
-    const t = run.t || 0;
-    const d = run.duration || def.duration;
-    fill.style.width = `${Math.min(100, (t / d) * 100)}%`;
-    time.textContent = `${fmtTime(t)} / ${fmtTime(d)}`;
-    if (run.score) {
-      let name = '';
-      for (const c of run.score.chapters) if (c.t <= t) name = c.title;
-      if (chapter.textContent !== name) chapter.textContent = name;
-    }
+    tp.update();
     if (!el.classList.contains('idle')) map.update();
   };
   raf = requestAnimationFrame(tick);
@@ -135,7 +133,8 @@ export function experience(root, id) {
         leave();
         return true;
       }
-      return false;
+      const inControls = controls.contains(document.activeElement) || endCard.contains(document.activeElement);
+      return showKey(run, e, inControls);
     },
   };
 }

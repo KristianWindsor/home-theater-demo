@@ -10,8 +10,10 @@ function visible(el) {
   return st.visibility !== 'hidden' && st.display !== 'none' && el.closest('[inert]') === null;
 }
 
-export function focusables(root = document.getElementById('ui')) {
-  return [...root.querySelectorAll(FOCUSABLE)].filter(visible);
+/** Focusable elements in root; by default the screen and the Now Playing bar that sits beside it. */
+export function focusables(root = null) {
+  const roots = root ? [root] : [document.getElementById('ui'), document.getElementById('np')].filter(Boolean);
+  return roots.flatMap((r) => [...r.querySelectorAll(FOCUSABLE)]).filter(visible);
 }
 
 export function focusFirst(root) {

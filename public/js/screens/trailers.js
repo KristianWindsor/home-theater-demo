@@ -26,7 +26,7 @@ export const trailerReel = (items) => trailerGroups(items).flatMap((g) => g.item
 
 function trailerCard(item, autofocus) {
   const app = ctx.app;
-  return h('button', { class: 'card trailer', onclick: () => app.router.go(`/play/${item.id}?t=0`), 'data-autofocus': autofocus || null },
+  return h('button', { class: 'card trailer', onclick: () => app.router.go(`/play/${item.id}?t=0`), 'data-autofocus': autofocus || null, 'data-key': `item:${item.id}` },
     h('div', { class: 'thumb' },
       h('img', { src: item.poster, alt: '', loading: 'lazy', onerror: (e) => { e.target.style.opacity = 0; } }),
       h('div', { class: 'badges' }, badges(item)),

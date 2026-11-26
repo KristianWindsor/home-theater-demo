@@ -1,9 +1,10 @@
-// Home: the 3D theater. Click speakers to hear them alone, the TV for movies, the couch to sit.
+// Home: the 3D theater. Click speakers to hear them alone, the TV for movies, the couch to sit. Room shows play
+// here, with their transport in a pill at the top; the music's transport is the Now Playing bar (core/nowplaying.js).
 import { h, icon, TOUCH_ONLY } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
 import { settings } from '../core/settings.js';
-import { coverEl } from './music.js';
+import { showTransport, showKey } from './transport.js';
 
 export function home(root) {
   const app = ctx.app;
@@ -12,14 +13,15 @@ export function home(root) {
   const unsubs = [];
   const tag = h('div', { class: 'room-tag', style: { opacity: 0 } });
   const banner = h('div', { class: 'demo-banner', style: { display: 'none' } });
-  const nowPlaying = h('div', { class: 'nowplaying', style: { display: 'none' } });
   const go = (path) => () => app.router.go(path);
+  const dockItem = (path, ic, label, auto) => h('button', { class: 'dock-item', onclick: go(path), 'data-autofocus': auto || null, 'data-key': `dock:${path}` },
+    icon(ic), h('span', {}, label));
   const dock = h('div', { class: 'dock' },
-    h('button', { class: 'dock-item', onclick: go('/demos'), 'data-autofocus': true }, icon('surround'), h('span', {}, 'Demos')),
-    h('button', { class: 'dock-item', onclick: go('/trailers') }, icon('ticket'), h('span', {}, 'Trailers')),
-    h('button', { class: 'dock-item', onclick: go('/movies') }, icon('film'), h('span', {}, 'Movies')),
-    h('button', { class: 'dock-item', onclick: go('/music') }, icon('music'), h('span', {}, 'Music')),
-    h('button', { class: 'dock-item', onclick: go('/settings') }, icon('settings'), h('span', {}, 'Settings')),
+    dockItem('/demos', 'surround', 'Demos', true),
+    dockItem('/trailers', 'ticket', 'Trailers'),
+    dockItem('/movies', 'film', 'Movies'),
+    dockItem('/music', 'music', 'Music'),
+    dockItem('/settings', 'settings', 'Settings'),
   );
   const xpPill = h('div', { class: 'xp-pill' });
   const el = h('div', { class: 'screen home' },
@@ -28,38 +30,68 @@ export function home(root) {
     h('div', { class: 'room-hint' }, TOUCH_ONLY
       ? ['Tap a speaker to hear it alone', h('br'), 'Drag to look around · tap the couch to sit']
       : ['Click a speaker to hear it alone', h('br'), 'Drag to look around · click the couch to sit']),
-    tag, banner, nowPlaying, dock, xpPill,
+    tag, banner, dock, xpPill,
   );
   root.appendChild(el);
   focusFirst(el);
 
-  // room experiences ("The Room Wakes Up") take over this screen: the interface fades out and back in on cue
+  // room experiences ("Awakening") take over this screen: the interface fades out and back in on cue. Their
+  // transport (pause, chapters, restart, a seekable timeline) is a pill that shows when the mouse moves or a key is
+  // pressed, and stays while the show is paused or the pill has focus
   let xpUnsub = [];
   let pillTimer = 0;
+  let tp = null, tpRaf = 0;
+  const immersive = (on) => {
+    el.classList.toggle('immersive', on);
+    dock.inert = on; // hidden, so out of reach of the arrow keys too
+  };
   const showPill = () => {
-    if (!app.experience || app.experience.kind !== 'room') return;
+    const run = app.experience;
+    if (!run || run.kind !== 'room') return;
     xpPill.classList.add('on');
     clearTimeout(pillTimer);
-    pillTimer = setTimeout(() => xpPill.classList.remove('on'), 2600);
+    const hide = () => {
+      if (run.state === 'paused' || run.state === 'seeking' || xpPill.contains(document.activeElement)) pillTimer = setTimeout(hide, 1500);
+      else xpPill.classList.remove('on');
+    };
+    pillTimer = setTimeout(hide, 2600);
   };
   const bindXp = (run) => {
     for (const u of xpUnsub) u();
     xpUnsub = [];
+    cancelAnimationFrame(tpRaf);
     if (!run || run.kind !== 'room') {
-      el.classList.remove('immersive');
+      immersive(false);
       xpPill.classList.remove('on');
+      tp = null;
       return;
     }
-    xpPill.replaceChildren(h('span', { class: 'title' }, run.def.title),
-      h('button', { class: 'btn small', onclick: () => app.stopExperience() }, icon('close'), 'Stop'));
-    xpUnsub.push(run.on('chrome', (visible) => el.classList.toggle('immersive', !visible)));
-    if (run.chromeHidden) el.classList.add('immersive');
+    tp = showTransport();
+    xpPill.replaceChildren(
+      h('div', { class: 'xp-pill-row' },
+        h('div', { class: 'xp-name' }, h('div', { class: 'title' }, run.def.title), tp.chapter),
+        h('div', { class: 'xp-transport' }, ...tp.buttons),
+        h('button', { class: 'btn small', onclick: () => app.finishExperience(), 'data-key': 'xp:stop' }, icon('close'), 'Stop')),
+      h('div', { class: 'xp-pill-bar' }, tp.bar, tp.time));
+    tp.attach(run);
+    const tick = () => {
+      tpRaf = requestAnimationFrame(tick);
+      if (xpPill.classList.contains('on') && tp) tp.update();
+    };
+    tick();
+    xpUnsub.push(run.on('chrome', (visible) => immersive(!visible)));
+    xpUnsub.push(run.on('state', (st) => {
+      if (st === 'playing' && tp) tp.drawMarks();
+      if (st === 'paused') showPill();
+    }));
+    if (run.chromeHidden) immersive(true);
   };
   unsubs.push(app.on('experience', bindXp));
   bindXp(app.experience);
   for (const ev of ['pointermove', 'pointerdown']) document.addEventListener(ev, showPill, true);
   unsubs.push(() => {
     for (const u of xpUnsub) u();
+    cancelAnimationFrame(tpRaf);
     clearTimeout(pillTimer);
     for (const ev of ['pointermove', 'pointerdown']) document.removeEventListener(ev, showPill, true);
   });
@@ -112,7 +144,9 @@ export function home(root) {
   // demo banner: built once and updated in place, so the Stop button stays the same element while it's tapped
   const bTitle = h('span', { class: 'title' });
   const bStatus = h('span', { class: 'status' });
-  banner.append(bTitle, bStatus, h('button', { class: 'btn small', onclick: () => app.stopDemo() }, icon('close'), 'Stop'));
+  banner.append(bTitle, bStatus,
+    h('button', { class: 'btn small', onclick: () => app.demo && app.runDemo(app.demo.def.id), title: 'From the start', 'data-key': 'demo:restart' }, icon('refresh'), 'Restart'),
+    h('button', { class: 'btn small', onclick: () => app.finishDemo(), 'data-key': 'demo:stop' }, icon('close'), 'Stop'));
   const renderDemo = (st) => {
     if (!st) {
       banner.style.display = 'none';
@@ -129,24 +163,6 @@ export function home(root) {
   const demoClock = setInterval(() => app.demo && renderDemo(app.demo.status), 500);
   unsubs.push(() => clearInterval(demoClock));
 
-  // now playing (music keeps going in the background; the TV and lights follow it)
-  const renderNP = () => {
-    const m = app.music;
-    if (!m.item) {
-      nowPlaying.style.display = 'none';
-      return;
-    }
-    nowPlaying.style.display = '';
-    nowPlaying.replaceChildren(
-      m.item.cover ? h('img', { src: m.item.cover, alt: '', onerror: (e) => { e.target.style.visibility = 'hidden'; } }) : coverEl(m.item, 'cover-art'),
-      h('div', { class: 'np-text' }, h('div', { class: 'np-title' }, m.item.title), h('div', { class: 'np-sub' }, m.item.artist || m.item.album || '')),
-      h('button', { class: 'btn btn-icon btn-ghost', onclick: () => m.toggle(), 'aria-label': 'Play or pause' }, icon(m.playing ? 'pause' : 'play')),
-      h('button', { class: 'btn btn-icon btn-ghost', onclick: () => app.router.go(`/viz/${m.item.id}`), 'aria-label': m.videoOn ? 'Watch the music video' : 'Open visualizer' }, icon(m.videoOn ? 'film' : 'eye')),
-    );
-  };
-  unsubs.push(app.music.on(() => renderNP()));
-  renderNP();
-
   const order = ['fl', 'c', 'fr', 'sr', 'sl', 'sub'];
   return {
     unmount() {
@@ -156,13 +172,20 @@ export function home(root) {
       if (app.demo) app.stopDemo();
     },
     onKey(e) {
-      if (app.experience && app.experience.kind === 'room') {
+      const run = app.experience;
+      if (run && run.kind === 'room') {
         showPill();
         if (e.key === 'Escape' || e.key === 'Backspace') {
-          app.stopExperience();
+          app.finishExperience();
           return true;
         }
-        return false;
+        // arrow keys move between the pill's buttons once one has focus; before that, up/down give it focus
+        const inPill = xpPill.contains(document.activeElement);
+        if (!inPill && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && tp) {
+          tp.playBtn.focus();
+          return true;
+        }
+        return showKey(run, e, inPill);
       }
       const n = Number(e.key);
       if (n >= 1 && n <= 6) {
@@ -176,7 +199,7 @@ export function home(root) {
         return true;
       }
       if (e.key === 'Escape' && app.demo) {
-        app.stopDemo();
+        app.finishDemo();
         return true;
       }
       return false;

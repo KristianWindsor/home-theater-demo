@@ -8,16 +8,24 @@ A home-theater showcase that runs in a browser on the machine connected to the T
 - **Demos**: *Shows* (seven composed surround experiences where the music, where each sound sits in the room,
   the picture and the lights all come from one score, plus a helicopter orbiting the couch and a thunderstorm
   with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips.
-  See [Experiences](#experiences).
+  The shows have a real transport: pause, restart, previous/next chapter, and a timeline you can click or drag
+  along ("wait, play that part again"). See [Experiences](#experiences).
 - **Trailers**: the Dolby, DTS and THX trailers that play before a film in the cinema, one section per brand.
   *Play all* runs them back to back.
-- **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, scene fades, and your
-  starred scenes as tiles on the Movies page. Mark scenes while watching with **B** (start) and **E** (end).
+- **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, one row of scenes per film,
+  scene fades. A long scene can have a **highlight**, a 2–3 minute cut its tile plays first (the podrace start
+  rather than all 15 minutes), with the **full sequence** a button away. The player's timeline spans the clip
+  playing, so it's easy to scrub; **T** switches it to the whole film. Mark scenes while watching with **B**
+  (start) and **E** (end).
 - **Music visualizer**: each song is analyzed once (beats, downbeats, drums, harmony, key, sections, builds,
   drops). The visuals are then **choreographed for the whole song**, like a pre-programmed light show, and
   rendered live in WebGL with the live spectrum layered on top. Unanalyzed tracks react live until their analysis
   is done. Songs with a **music video** show the video instead, in sync, while the lights keep following the music.
-  Every song carries a badge for its **audio quality** (Hi-Res, Lossless, or the codec and bitrate).
+  Every song carries a badge for its **audio quality** (Hi-Res, Lossless, or the codec and bitrate). Songs show
+  as one grid, or by album. Music keeps playing while you browse, with a **Now Playing** bar on the home and
+  library screens.
+- **Back where you were**: coming back from a show, a scene or a song lands on the tile you started it from,
+  with each screen scrolled where you left it, which makes the remote much nicer to use.
 
 No accounts, no login, no third-party services. Everything is served from your own box.
 
@@ -125,9 +133,14 @@ Scenes live in `config/catalog.json`, keyed by file name:
   (the name is pre-filled) and **E** where it ends. That's the quickest way to build a scene list.
 - Scenes edited in the app (B/E in the player, or *Edit scenes* on a movie page) are saved on the server in
   `DATA_DIR/scenes.json` and override the catalog. *Revert to catalog* undoes that.
-- Starred scenes (`"star": true`, or the star in *Edit scenes*) show up as their own tiles under **Scenes** at
-  the top of the Movies page; click one to play just that scene. A movie's page lists all of its scenes and
-  has *Play all* to run them back to back.
+- The Movies page has a row of scenes per film; starred scenes (`"star": true`, or the star in *Edit scenes*)
+  are the highlights of each row. Click one to play just that scene. A movie's page lists all of its scenes
+  and has *Play all* to run them back to back.
+- A long scene can carry a `"highlight"`, a short cut inside it:
+  `"highlight": { "start": "0:58:56", "end": "1:01:50", "note": "\"Start your engines\"..." }`. Its tile plays the
+  highlight (and shows its length), the player has **Full sequence** to carry on into the whole scene, and
+  *Play all* plays the highlights. The shipped highlights were picked from the soundtrack (where the subwoofer,
+  the surrounds and the loudness are busiest), with their ends on cuts and outside lines of dialogue.
 - MKV chapters are listed too, so you can jump around before you've curated anything.
 
 The shipped catalog has a frame-checked scene list for The Dark Knight, keyed `The Dark Knight (2008).mp4`:
@@ -287,10 +300,10 @@ it), and which Hue light sits behind what. Edit it to match the real room; the s
 | Where | Keys |
 |---|---|
 | Everywhere | Arrows move between buttons, Enter selects, Esc/Backspace goes back |
-| Player | Space/K play-pause · ←/→ ±10 s (Shift ±60) · N/P next/previous scene · B mark scene start · E mark scene end · F fullscreen · +/− volume |
+| Player | Space/K play-pause · ←/→ ±10 s (Shift ±60) · N/P next/previous scene · T timeline: this clip / whole film · B mark scene start · E mark scene end · F fullscreen · +/− volume |
 | Visualizer | see above |
 | Home | 1–6 speakers · C couch |
-| Experience | Esc/Backspace stops · any key or the mouse shows the controls |
+| Shows | Space/K pause · ←/→ previous/next chapter (← once: back to this chapter's start) · J/L ±10 s · R from the start · Esc stops · any key or the mouse shows the controls |
 
 ## Configuration
 

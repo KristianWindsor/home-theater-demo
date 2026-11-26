@@ -1,7 +1,9 @@
-// Music library, grouped by album. Picking a track opens the visualizer (or the song's music video).
+// Music library: one grid of songs (the collection is mostly singles), or grouped by album (Songs / Albums at the
+// top, remembered). Picking a song plays it and the ones after it, and opens the visualizer (or its music video).
 import { h, icon, fmtTime } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
+import { settings, setSetting } from '../core/settings.js';
 import { hashString } from '../gl/math.js';
 import { qualityBadge, musicVideoBadge } from '../core/quality.js';
 
@@ -37,7 +39,9 @@ export function music(root) {
     albums.get(key).push(t);
   }
   for (const list of albums.values()) list.sort((a, b) => (a.disc || 0) - (b.disc || 0) || (a.track || 0) - (b.track || 0) || a.title.localeCompare(b.title));
-  const rows = new Map();
+  // the song grid runs in album order (artist, album, track), so the songs after the one you pick make sense as a queue
+  const songs = [...albums.values()].flat();
+  const rows = new Map(); // id -> { t, badge } for the view on screen
   const play = async (list, i) => {
     await app.music.playQueue(list, i);
     app.router.go(`/viz/${list[i].id}`);
@@ -50,42 +54,91 @@ export function music(root) {
     }
     return a;
   };
-  let first = true;
+  const view = () => (settings.musicView === 'albums' ? 'albums' : 'songs');
+  const body = h('div', {});
+  const viewCtl = h('div', { class: 'seg-ctl', role: 'group', 'aria-label': 'Show' });
+  const drawCtl = () => viewCtl.replaceChildren(...[['songs', 'Songs'], ['albums', 'Albums']].map(([v, label]) => h('button', {
+    class: view() === v ? 'on' : '', 'aria-pressed': String(view() === v), 'data-key': `view:${v}`,
+    onclick: () => {
+      if (view() === v) return;
+      setSetting('musicView', v);
+      drawCtl();
+      draw();
+    },
+  }, label)));
+  const nowId = () => (app.music.item ? app.music.item.id : null);
+  // the analysis status only when it says something (analyzing, queued, live only): "Choreographed" is the norm
+  const songStatus = (t) => h('span', { class: 'st' }, t.analysis && t.analysis.status === 'ready' ? null : statusBadge(t));
+
+  function songsView() {
+    return h('div', { class: 'song-grid' }, songs.map((t, i) => {
+      const badge = songStatus(t);
+      rows.set(t.id, { t, badge, compact: true });
+      return h('button', { class: `card song ${nowId() === t.id ? 'playing' : ''}`, onclick: () => play(songs, i), 'data-autofocus': i === 0 || null, 'data-key': `song:${t.id}` },
+        h('div', { class: 'song-cover' }, coverEl(t)),
+        h('div', { class: 'body' },
+          h('div', { class: 'title' }, t.title),
+          h('div', { class: 'meta' }, t.artist || t.album || ''),
+          h('div', { class: 'song-foot' }, h('span', { class: 'badges' }, qualityBadge(t), musicVideoBadge(t), badge), h('span', { class: 'dur' }, fmtTime(t.duration)))));
+    }));
+  }
+
+  function albumsView() {
+    let first = true;
+    return [...albums.entries()].map(([key, list]) => {
+      const [artist, album] = key.split('\u0000');
+      return h('div', { class: 'album' },
+        coverEl(list[0]),
+        h('div', {},
+          h('h2', {}, album), h('div', { class: 'muted' }, artist),
+          h('div', { class: 'tracks' }, list.map((t, i) => {
+            const auto = first;
+            first = false;
+            const badge = h('span', { class: 'st' }, statusBadge(t));
+            rows.set(t.id, { t, badge, compact: false });
+            return h('button', { class: `track ${nowId() === t.id ? 'playing' : ''}`, onclick: () => play(list, i), 'data-autofocus': auto || null, 'data-key': `song:${t.id}` },
+              h('span', { class: 'no' }, t.track || i + 1),
+              h('span', { class: 'tt' }, h('div', {}, t.title), t.artist && t.artist !== artist ? h('div', { class: 'sub' }, t.artist) : null),
+              h('span', { class: 'badges' }, qualityBadge(t), musicVideoBadge(t), badge),
+              h('span', { class: 'dur' }, fmtTime(t.duration)));
+          }))));
+    });
+  }
+
+  function draw() {
+    rows.clear();
+    body.replaceChildren(...[view() === 'albums' ? albumsView() : songsView()].flat());
+  }
+
   const el = h('div', { class: 'screen scrim' },
     h('div', { class: 'topbar' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),
       h('h1', {}, 'Music'), h('div', { class: 'spacer' }),
-      tracks.length ? h('button', { class: 'btn', onclick: () => play(tracks, 0) }, icon('play'), h('span', { class: 'lbl' }, 'Play all')) : null,
+      tracks.length ? viewCtl : null,
+      tracks.length ? h('button', { class: 'btn', onclick: () => play(songs, 0) }, icon('play'), h('span', { class: 'lbl' }, 'Play all')) : null,
       tracks.length ? h('button', { class: 'btn', onclick: () => play(shuffled(), 0) }, icon('shuffle'), h('span', { class: 'lbl' }, 'Shuffle')) : null),
     h('div', { class: 'scroll' },
-      tracks.length ? [...albums.entries()].map(([key, list]) => {
-        const [artist, album] = key.split('\u0000');
-        return h('div', { class: 'album' },
-          coverEl(list[0]),
-          h('div', {},
-            h('h2', {}, album), h('div', { class: 'muted' }, artist),
-            h('div', { class: 'tracks' }, list.map((t, i) => {
-              const auto = first;
-              first = false;
-              const badge = h('span', { class: 'st' }, statusBadge(t));
-              rows.set(t.id, { t, badge });
-              return h('button', { class: `track ${app.music.item && app.music.item.id === t.id ? 'playing' : ''}`, onclick: () => play(list, i), 'data-autofocus': auto || null },
-                h('span', { class: 'no' }, t.track || i + 1),
-                h('span', { class: 'tt' }, h('div', {}, t.title), t.artist && t.artist !== artist ? h('div', { class: 'sub' }, t.artist) : null),
-                h('span', { class: 'badges' }, qualityBadge(t), musicVideoBadge(t), badge),
-                h('span', { class: 'dur' }, fmtTime(t.duration)));
-            }))));
-      }) : h('div', { class: 'empty' }, 'No music yet. Put FLAC (or any common format) in ', h('code', {}, 'media/music'),
+      tracks.length ? body : h('div', { class: 'empty' }, 'No music yet. Put FLAC (or any common format) in ', h('code', {}, 'media/music'),
         ', one folder per album works nicely. Each track is analyzed once in the background (about 10 s per song) so the visuals can be choreographed; until then they react live. ',
         'A video with the same name as a song is its music video, shown instead of the visualizer.')));
   root.appendChild(el);
+  if (tracks.length) {
+    drawCtl();
+    draw();
+  }
   focusFirst(el);
-  const unsub = app.on('analysis', (d) => {
-    const r = rows.get(d.id);
-    if (r) {
+  const unsubs = [
+    app.on('analysis', (d) => {
+      const r = rows.get(d.id);
+      if (!r) return;
       r.t.analysis = d;
-      r.badge.replaceChildren(statusBadge(r.t));
-    }
-  });
-  return { unmount: unsub };
+      r.badge.replaceChildren(...(r.compact && d.status === 'ready' ? [] : [statusBadge(r.t)]));
+    }),
+    // the song playing stays marked as the queue moves on
+    app.music.on(() => {
+      const id = nowId();
+      for (const b of body.querySelectorAll('[data-key^="song:"]')) b.classList.toggle('playing', b.dataset.key === `song:${id}`);
+    }),
+  ];
+  return { unmount: () => unsubs.forEach((u) => u()) };
 }
