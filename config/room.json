@@ -1,18 +1,19 @@
 {
-  "_comment": "Layout of the home theater shown on the home screen. Meters; the listener sits at x=0,z=0 facing -z (12 o'clock = the TV). 'clock' places a speaker around the listener like hours on a clock face. 'channel' is the output channel that speaker answers to.",
+  "_comment": "Layout of the home theater shown on the home screen. Meters; the listener sits at x=0,z=0 facing -z (12 o'clock = the TV); the couch is centered 'couch.z' behind that. A tower goes at 'clock' + 'distance' around the listener, or at 'x' + 'z', where 'z' can be \"tv\" (in line with the TV stand) or \"couch\" (level with the couch). A subwoofer with 'corner' stands in that corner, 'gap' meters off both walls. 'facing': \"forward\" keeps a speaker's front parallel to the front wall, \"across\" parallel to its side wall; otherwise it turns towards the listener. 'fireplace' sticks out of the middle of the front wall; the TV and its stand back onto it. 'channel' is the output channel that speaker answers to. See public/js/room/layout.js.",
   "name": "The Theater",
-  "room": { "width": 6.4, "front": -3.7, "back": 2.7, "height": 2.75 },
+  "room": { "width": 6.4, "front": -2.6, "back": 2.7, "height": 2.75 },
+  "fireplace": { "width": 2.0, "depth": 0.4 },
   "tv": { "diagonalInches": 115, "centerHeight": 1.38, "label": "115\" TV" },
   "console": { "width": 2.5, "height": 0.42, "depth": 0.48 },
   "speakers": [
-    { "id": "fl", "label": "Front Left", "detail": "JBL tower", "channel": "FL", "type": "tower", "clock": 10, "distance": 2.9 },
-    { "id": "fr", "label": "Front Right", "detail": "JBL tower", "channel": "FR", "type": "tower", "clock": 2, "distance": 2.9 },
-    { "id": "sr", "label": "Surround Right", "detail": "JBL tower", "channel": "SR", "type": "tower", "clock": 4, "distance": 2.35 },
-    { "id": "sl", "label": "Surround Left", "detail": "JBL tower", "channel": "SL", "type": "tower", "clock": 8, "distance": 2.35 },
+    { "id": "fl", "label": "Front Left", "detail": "JBL Studio L890", "channel": "FL", "type": "tower", "x": -1.6, "z": "tv", "facing": "forward" },
+    { "id": "fr", "label": "Front Right", "detail": "JBL Studio L890", "channel": "FR", "type": "tower", "x": 1.6, "z": "tv", "facing": "forward" },
+    { "id": "sr", "label": "Surround Right", "detail": "JBL Studio L890", "channel": "SR", "type": "tower", "x": 2.35, "z": "couch", "facing": "across" },
+    { "id": "sl", "label": "Surround Left", "detail": "JBL Studio L890", "channel": "SL", "type": "tower", "x": -2.35, "z": "couch", "facing": "across" },
     { "id": "c", "label": "Center", "detail": "Center channel", "channel": "FC", "type": "center" },
-    { "id": "sub", "label": "Subwoofer", "detail": "The ungodly one", "channel": "LFE", "type": "subwoofer", "corner": "back-left", "size": 0.92 }
+    { "id": "sub", "label": "Subwoofer", "detail": "The ungodly one", "channel": "LFE", "type": "subwoofer", "corner": "front-left", "gap": 0.05, "facing": "forward", "size": 0.92 }
   ],
-  "couch": { "seats": 2, "z": 0.3, "color": [0.045, 0.032, 0.026] },
+  "couch": { "seats": 2, "z": 0.3, "color": [0.02, 0.02, 0.022] },
   "hue": [
     { "id": "hue-tv", "label": "Behind TV", "anchor": "tv" },
     { "id": "hue-fl", "label": "Behind front left", "anchor": "fl" },

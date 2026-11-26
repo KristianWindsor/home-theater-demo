@@ -50,7 +50,7 @@ export function settingsScreen(root) {
     row('Volume', 'Master level for music, shows and tests', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     row('Shows level', 'The experiences, Orbit and Thunderstorm. 100% plays them as composed', ...slider('showLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     row('Speaker clicks & tests', 'Tapping speakers in the room, Channel Check, Subwoofer Sweep and these test buttons', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
-    eng.ready && eng.channels === 8 ? row('Surround speakers on a 7.1 output', 'Where the 4 and 8 o’clock towers are wired', seg('surroundMap', [['side', 'Side'], ['back', 'Back']])) : null,
+    eng.ready && eng.channels === 8 ? row('Surround speakers on a 7.1 output', 'Where the surround towers are wired', seg('surroundMap', [['side', 'Side'], ['back', 'Back']])) : null,
   );
 
   const flash = h('div', { class: 'sync-flash' });

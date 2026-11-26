@@ -216,10 +216,14 @@ scales how hard the visuals hit; **Reduce flashing** tames full-screen flashes f
 
 ## The 3D room
 
-`config/room.json` describes it: room size, TV size, each speaker's clock position and distance from the
-listener (`"clock": 10` = 10 o'clock), the sub's corner and size, and which Hue light sits behind what.
-Edit it to match the real room; the speakers' `channel` (FL, FR, FC, LFE, SL, SR) is what their easter egg
-plays on. On the home screen: drag to orbit, scroll to zoom, keys **1–6** trigger speakers, **C** sits on the couch.
+`config/room.json` describes it: room size, TV size, where each speaker stands (a clock position and distance
+from the listener, `"clock": 10` = 10 o'clock, or `"x"` and `"z"` in meters, with `"z": "tv"` for in line with
+the TV stand and `"z": "couch"` for level with the couch), which way it faces (towards the listener,
+`"facing": "forward"` parallel to the front wall, or `"across"` parallel to its side wall), the sub's corner,
+size and gap from the walls, an optional fireplace sticking out of the front wall (the TV and its stand back onto
+it), and which Hue light sits behind what. Edit it to match the real room; the same placement
+(`public/js/room/layout.js`) gives the speaker angles the experiences are rendered for. The speakers' `channel`
+(FL, FR, FC, LFE, SL, SR) is what their easter egg plays on. On the home screen: drag to orbit, scroll to zoom, keys **1–6** trigger speakers, **C** sits on the couch.
 
 ## Keys (keyboard or remote)
 

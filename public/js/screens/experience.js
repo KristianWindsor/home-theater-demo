@@ -158,7 +158,7 @@ export function speakerMap(app) {
   const b = room.bounds;
   mk('rect', { x: (-b.W / 2) * scale, y: b.front * scale, width: b.W * scale, height: (b.back - b.front) * scale, rx: 4,
     fill: 'rgba(255,255,255,0.02)', stroke: 'rgba(255,255,255,0.14)' });
-  mk('rect', { x: (-room.tv.w / 2) * scale, y: b.front * scale + 1, width: room.tv.w * scale, height: 2.2, rx: 1, fill: 'rgba(255,255,255,0.4)' });
+  mk('rect', { x: (-room.tv.w / 2) * scale, y: room.tv.z * scale, width: room.tv.w * scale, height: 2.2, rx: 1, fill: 'rgba(255,255,255,0.4)' });
   mk('rect', { x: -10, y: 0, width: 20, height: 8, rx: 2.5, fill: 'rgba(255,255,255,0.14)' }); // couch
   for (const f of app.rig.fixtures) {
     const p = f.pos;

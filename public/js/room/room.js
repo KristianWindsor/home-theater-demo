@@ -5,8 +5,10 @@ import { Post } from '../gl/post.js';
 import { Resolution } from '../gl/resolution.js';
 import { m4, v3, clamp, lerp, easeInOut, fitFov } from '../gl/math.js';
 import { roundedBox, cylinder, speakerCone, torus, plane, quad } from './meshes.js';
+import { roomBounds, standOf, couchZ, placeSpeaker, fireplaceOf, backingZ } from './layout.js';
 
 const MAX_LIGHTS = 16;
+const COUCH_DEPTH = 0.95;
 
 const STD_VS = `#version 300 es
 layout(location = 0) in vec3 aPos;
@@ -66,10 +68,48 @@ void main() {
   } else if (uPattern == 3) {     // leather
     albedo *= 0.85 + 0.3 * vnoise(vUV * 60.0);
     rough = clamp(rough + 0.2 * (vnoise(vUV * 140.0) - 0.5), 0.2, 1.0);
-  } else if (uPattern == 4) {     // rug: soft border + pattern
-    vec2 q = abs(vUV / vec2(3.0, 2.4) - 0.5);
-    float border = smoothstep(0.43, 0.44, max(q.x, q.y)) - smoothstep(0.47, 0.48, max(q.x, q.y));
-    albedo = mix(albedo, albedo * 2.2, border) * (0.85 + 0.3 * vnoise(vUV * 120.0));
+  } else if (uPattern == 4) {     // rug: red field, cream border with a running motif, a medallion, a faint lattice
+    vec2 p = vUV - vec2(1.5, 1.2);              // meters from the middle of the 3.0 x 2.4 m rug
+    vec2 q = abs(p);
+    float e = min(1.5 - q.x, 1.2 - q.y);        // distance to the outer edge
+    float aa = max(fwidth(e), 1e-4);
+    vec3 cream = vec3(0.2, 0.17, 0.135), deep = albedo * vec3(0.55, 0.6, 0.75);
+    float band = smoothstep(0.07, 0.07 + aa, e) - smoothstep(0.25, 0.25 + aa, e);
+    float s = 1.5 - q.x < 1.2 - q.y ? p.y : p.x;   // position along the nearest edge
+    float motif = step(abs(fract(s * 4.0) - 0.5) + abs(e - 0.16) * 3.2, 0.3);
+    float line = smoothstep(0.29, 0.29 + aa, e) - smoothstep(0.31, 0.31 + aa, e);
+    float lattice = smoothstep(0.47, 0.5, max(abs(fract((p.x + p.y) * 2.2) - 0.5), abs(fract((p.x - p.y) * 2.2) - 0.5)));
+    float md = q.x / 0.95 + q.y / 0.62;          // the medallion (a lozenge)
+    float ring = smoothstep(0.86, 0.88, md) - smoothstep(0.95, 0.97, md);
+    float core = 1.0 - smoothstep(0.34, 0.36, md);
+    vec3 c = mix(albedo, deep, (1.0 - smoothstep(0.86, 0.88, md)) * 0.8);    // darker red inside the medallion
+    c = mix(c, cream, lattice * 0.1 * smoothstep(0.97, 1.0, md) + ring * 0.6 + core * 0.45 + line * 0.6);
+    c = mix(c, mix(mix(deep, cream, 0.6), albedo, motif), band);
+    c = mix(c, deep, 1.0 - smoothstep(0.0, 0.07 + aa, e));                    // dark outer edge
+    albedo = c * (0.82 + 0.3 * vnoise(vUV * 160.0));
+  } else if (uPattern == 6) {     // hardwood: planks along the room's length, staggered joints, grain, satin finish
+    float pw = 0.19, pl = 1.6;
+    float row = floor(vUV.x / pw);
+    float along = vUV.y + hash12(vec2(row, 3.7)) * pl;
+    vec2 id = vec2(row, floor(along / pl));
+    float h = hash12(id);
+    float g = vnoise(vec2(vUV.x * 55.0 + h * 40.0, along * 2.5)) * 0.6 + vnoise(vec2(vUV.x * 240.0, along * 9.0 + h * 7.0)) * 0.4;
+    float rings = 0.5 + 0.5 * sin(vUV.x * 85.0 + g * 7.0 + h * 30.0);
+    albedo *= (0.7 + 0.55 * h) * (0.8 + 0.3 * g) * (0.9 + 0.14 * rings);
+    albedo *= mix(vec3(1.08, 0.96, 0.88), vec3(0.92, 1.0, 1.1), hash12(id + 5.3));
+    // seams between the planks, faded out where they'd be thinner than a pixel
+    float dx = min(fract(vUV.x / pw), 1.0 - fract(vUV.x / pw)) * pw;
+    float dz = min(fract(along / pl), 1.0 - fract(along / pl)) * pl;
+    float fw = max(fwidth(vUV.x), fwidth(vUV.y));
+    float seam = (1.0 - smoothstep(0.0012, 0.0012 + fw, min(dx, dz))) * clamp(0.004 / max(fw, 1e-5), 0.0, 1.0);
+    albedo *= 1.0 - 0.6 * seam;
+    rough = clamp(rough + 0.12 * (g - 0.5) + 0.25 * seam, 0.15, 1.0);
+  } else if (uPattern == 7) {     // glass shelf: dark, glossy faces; the cut edges glow faintly green like thick glass
+    if (abs(N.y) < 0.5) {
+      albedo = vec3(0.05, 0.09, 0.085);
+      rough = 0.2;
+      extra += vec3(0.006, 0.016, 0.015);
+    }
   } else if (uPattern == 5) {     // the floor beyond the room: polished black with a faint grid of light
     vec2 g = abs(fract(vPos.xz / 2.0) - 0.5);
     float line = smoothstep(0.488, 0.5, max(g.x, g.y));
@@ -231,10 +271,14 @@ export class Mesh {
 }
 
 const MAT = {
-  carpet: { albedo: [0.05, 0.046, 0.044], rough: 0.97, pattern: 1 },
+  hardwood: { albedo: [0.12, 0.068, 0.036], rough: 0.38, pattern: 6 },
   wall: { albedo: [0.05, 0.055, 0.07], rough: 0.92, pattern: 2 },
   frontWall: { albedo: [0.02, 0.02, 0.024], rough: 0.95 },
-  rug: { albedo: [0.06, 0.04, 0.032], rough: 0.98, pattern: 4 },
+  rug: { albedo: [0.12, 0.034, 0.03], rough: 0.98, pattern: 4 },
+  glass: { albedo: [0.006, 0.009, 0.01], rough: 0.05, pattern: 7 },
+  chimney: { albedo: [0.034, 0.033, 0.036], rough: 0.92 },
+  stone: { albedo: [0.055, 0.052, 0.048], rough: 0.8, pattern: 1 },
+  firebox: { albedo: [0.004, 0.004, 0.004], rough: 0.9 },
   gloss: { albedo: [0.022, 0.022, 0.026], rough: 0.2 },
   satin: { albedo: [0.03, 0.03, 0.034], rough: 0.45 },
   cone: { albedo: [0.025, 0.025, 0.028], rough: 0.55 },
@@ -242,7 +286,6 @@ const MAT = {
   trim: { albedo: [0.55, 0.55, 0.58], rough: 0.3, metal: 1 },
   copper: { albedo: [0.55, 0.3, 0.17], rough: 0.35, metal: 1 },
   horn: { albedo: [0.008, 0.008, 0.009], rough: 0.35 },
-  walnut: { albedo: [0.09, 0.05, 0.03], rough: 0.5 },
   bezel: { albedo: [0.006, 0.006, 0.007], rough: 0.15 },
   diffuser: { albedo: [0.6, 0.6, 0.6], rough: 0.6 },
 };
@@ -334,18 +377,14 @@ export class Room {
   }
 
   build(cfg) {
-    const R = cfg.room || {};
-    const W = R.width || 6.4;
-    const front = R.front ?? -3.7;
-    const back = R.back ?? 2.7;
-    const H = R.height || 2.75;
+    const { W, front, back, H } = roomBounds(cfg);
     const D = back - front;
     const midZ = (front + back) / 2;
     this.bounds = { W, front, back, H };
-    // floor, rug, walls
-    this.add(this.mesh(`floor${W}x${D}`, () => plane(W, D)), MAT.carpet, m4.compose([0, 0, midZ]));
-    const cz = cfg.couch?.z ?? 0.3;
-    this.add(this.mesh('rug', () => plane(3.0, 2.4)), MAT.rug, m4.compose([0, 0.004, cz - 0.2]));
+    // floor, rug (its back edge lines up with the back of the couch), walls
+    this.add(this.mesh(`floor${W}x${D}`, () => plane(W, D)), MAT.hardwood, m4.compose([0, 0, midZ]));
+    const cz = couchZ(cfg);
+    this.add(this.mesh('rug', () => plane(3.0, 2.4)), MAT.rug, m4.compose([0, 0.004, cz + COUCH_DEPTH / 2 - 1.2]));
     const wall = (name, w, h, pos, rotY, mat) => {
       const n = this.add(this.mesh(`wall${w}x${h}`, () => quad(w, h)), { ...mat }, m4.compose(pos, rotY), { wall: true, uvScale: [w, h] });
       n.base = { pos, rotY };
@@ -358,6 +397,7 @@ export class Room {
     wall('left', D, H, [-W / 2, H / 2, midZ], Math.PI / 2, MAT.wall);
     wall('right', D, H, [W / 2, H / 2, midZ], -Math.PI / 2, MAT.wall);
     wall('back', W, H, [0, H / 2, back], Math.PI, MAT.wall);
+    this.buildFireplace(fireplaceOf(cfg), front);
     // a ceiling (two hinged panels) and an endless floor, both hidden unless an experience uses them
     this.ceiling = ['L', 'R'].map((side) => this.add(this.mesh(`ceil${W / 2}x${D}`, () => quad(W / 2, D)),
       { albedo: [0.03, 0.032, 0.04], rough: 0.9 }, m4.identity(), { hidden: true, ceilingSide: side }));
@@ -368,69 +408,87 @@ export class Room {
     const inches = cfg.tv?.diagonalInches || 100;
     const tvW = inches * 0.0254 * 0.8716, tvH = inches * 0.0254 * 0.4903;
     const tvY = cfg.tv?.centerHeight || 1.35;
-    const tvZ = front + 0.06;
+    const tvZ = backingZ(cfg) + 0.06; // on the fireplace, or the wall
     this.tv = { w: tvW, h: tvH, y: tvY, z: tvZ };
     this.add(this.mesh(`bezel${inches}`, () => roundedBox(tvW + 0.024, tvH + 0.024, 0.035, 0.006, 2)), MAT.bezel, m4.compose([0, tvY, tvZ]));
     this.screen = this.add(this.mesh(`screen${inches}`, () => quad(tvW, tvH)), { albedo: [0, 0, 0], rough: 0.1 }, m4.compose([0, tvY, tvZ + 0.0181]), { screen: true });
     this.picks.push({ id: 'tv', label: cfg.tv?.label || 'TV', center: [0, tvY, tvZ], rotY: 0, half: [tvW / 2, tvH / 2, 0.06] });
-    // console
-    const con = cfg.console || { width: 2.4, height: 0.42, depth: 0.48 };
-    const conZ = front + 0.05 + con.depth / 2;
-    this.add(this.mesh('console', () => roundedBox(con.width, con.height, con.depth, 0.015, 2)), MAT.walnut, m4.compose([0, con.height / 2, conZ]));
-    this.shadows.push({ pos: [0, conZ], size: [con.width + 0.3, con.depth + 0.4], s: 0.6 });
+    // TV stand: three glass shelves on four chrome posts
+    const con = standOf(cfg);
+    const shelf = this.mesh(`shelf${con.width}x${con.depth}`, () => roundedBox(con.width, 0.014, con.depth, 0.005, 2));
+    for (const y of [0.06, con.height * 0.52, con.height - 0.007]) this.add(shelf, MAT.glass, m4.compose([0, y, con.z]));
+    const post = this.mesh(`post${con.height}`, () => cylinder(0.013, con.height, 16));
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        this.add(post, MAT.trim, m4.compose([sx * (con.width / 2 - 0.05), con.height / 2, con.z + sz * (con.depth / 2 - 0.05)], 0, [1, 1, 1], Math.PI / 2));
+      }
+    }
+    this.shadows.push({ pos: [0, con.z], size: [con.width + 0.3, con.depth + 0.4], s: 0.35 });
     // speakers
-    for (const s of cfg.speakers || []) this.buildSpeaker(s, { con, conZ, front, back, W });
+    for (const s of cfg.speakers || []) this.buildSpeaker(s, cfg);
     this.buildCouch(cfg.couch || {}, cz);
     // Hue fixtures
     this.fixtures = [];
     for (const h of cfg.hue || []) {
       if (h.anchor === 'tv') {
-        this.fixtures.push({ id: h.id, label: h.label, anchor: 'tv', pos: [0, tvY, front + 0.28], az: 0, side: 0, rear: false,
+        this.fixtures.push({ id: h.id, label: h.label, anchor: 'tv', pos: [0, tvY, tvZ + 0.22], az: 0, side: 0, rear: false,
           dir: [0, 0, -1], cos: Math.cos(1.25), range: 3.2, gain: 1.3 });
         continue;
       }
       const sp = this.speakers[h.anchor];
       if (!sp) continue;
       const out = v3.norm([sp.pos[0], 0, sp.pos[2]]);
-      const p = [sp.pos[0] + out[0] * 0.3, 0.12, sp.pos[2] + out[2] * 0.3];
+      // behind the speaker, away from the listener; one standing against the front wall gets the lamp beside it
+      const p = sp.facing === 'forward'
+        ? [sp.pos[0] + Math.sign(sp.pos[0] || 1) * 0.3, 0.12, sp.pos[2] - 0.1]
+        : [sp.pos[0] + out[0] * 0.3, 0.12, sp.pos[2] + out[2] * 0.3];
+      p[0] = clamp(p[0], -W / 2 + 0.1, W / 2 - 0.1);
+      p[2] = clamp(p[2], front + 0.1, back - 0.1);
       this.fixtures.push({ id: h.id, label: h.label, anchor: h.anchor, pos: p, az: sp.az, side: Math.sign(sp.pos[0]), rear: sp.pos[2] > 0,
         dir: v3.norm([out[0] * 0.55, 1, out[2] * 0.55]), cos: Math.cos(0.75), range: 3.4, gain: 1.0 });
       this.add(this.mesh('hueBody', () => cylinder(0.065, 0.12, 24)), { ...MAT.diffuser }, m4.compose([p[0], 0.06, p[2]], 0, [1, 1, 1], -Math.PI / 2), { fixture: h.id });
     }
+    // framed on the room's middle (it was -0.5 when these were tuned), so a smaller room stays centered
+    const zoom = Math.max(0.9, Math.min(1, D / 6.4));
     this.presets = {
-      overview: { theta: 0.42, phi: 0.5, radius: 8.0, target: [0, 0.8, -0.9] },
-      couch: { theta: 0, phi: 0.04, radius: front * -1 + 0.55, target: [0, tvY, tvZ] },
+      overview: { theta: 0.42, phi: 0.5, radius: 8.0 * zoom, target: [0, 0.8, midZ - 0.4] },
+      couch: { theta: 0, phi: 0.04, radius: cz + 0.31 - tvZ, target: [0, tvY, tvZ] }, // eyes over the seat
       tv: { theta: 0, phi: 0.0, radius: 1.9, target: [0, tvY, tvZ] },
-      wide: { theta: -0.75, phi: 0.75, radius: 9.5, target: [0, 0.5, -0.3] },
-      top: { theta: 0.0, phi: 1.25, radius: 9, target: [0, 0, -0.4] },
+      wide: { theta: -0.75, phi: 0.75, radius: 9.5 * zoom, target: [0, 0.5, midZ + 0.2] },
+      top: { theta: 0.0, phi: 1.25, radius: 9 * zoom, target: [0, 0, midZ + 0.1] },
     };
+    this.cam = { ...this.presets.overview, target: this.presets.overview.target.slice() };
+    this.camGoal = { ...this.cam, target: this.cam.target.slice() };
   }
 
-  buildSpeaker(s, ctx) {
-    const { con, conZ, front, back, W } = ctx;
-    let pos, rotY, type = s.type || 'tower';
-    let az = 0;
-    if (type === 'center') {
-      pos = [0, con.height, conZ + con.depth / 2 - 0.2];
-      rotY = 0;
-    } else if (type === 'subwoofer') {
-      const size = s.size || 0.85;
-      const corner = s.corner || 'back-left';
-      const x = (corner.includes('left') ? -1 : 1) * (W / 2 - size / 2 - 0.25);
-      const z = corner.includes('back') ? back - size / 2 - 0.25 : front + size / 2 + 0.35;
-      pos = [x, 0, z];
-      rotY = Math.atan2(-x, -z);
-      az = (Math.atan2(x, -z) * 180) / Math.PI;
-    } else {
-      const th = (((s.clock ?? 12) - 12) * 30 * Math.PI) / 180;
-      const d = s.distance || 2.5;
-      pos = [Math.sin(th) * d, 0, -Math.cos(th) * d];
-      rotY = Math.atan2(-pos[0], -pos[2]);
-      az = (th * 180) / Math.PI;
+  /**
+   * A chimney breast in the middle of the front wall with a firebox at the bottom. Built in halves that travel
+   * with the front wall's halves (setShape), so it parts with the wall instead of blocking the opening.
+   */
+  buildFireplace(f, front) {
+    this.frontParts = [];
+    if (!f) return;
+    const part = (mesh, mat, x, y, z, scaleY) => {
+      const n = this.add(mesh, mat, m4.compose([x, y, z]));
+      this.frontParts.push({ node: n, pos: [x, y, z], side: Math.sign(x), scaleY });
+    };
+    const face = front + f.depth;
+    const fw = 1.15, fh = 0.9, ow = 0.8, oh = 0.6; // stone surround, firebox opening
+    const breast = this.mesh(`breast${f.width}x${f.height}x${f.depth}`, () => roundedBox(f.width / 2, f.height, f.depth, 0.01, 2));
+    const surround = this.mesh('fireSurround', () => roundedBox(fw / 2, fh, 0.03, 0.006, 2));
+    const opening = this.mesh('fireOpening', () => quad(ow / 2, oh));
+    for (const sx of [-1, 1]) {
+      part(breast, MAT.chimney, sx * f.width / 4, f.height / 2, front + f.depth / 2, true);
+      part(surround, MAT.stone, sx * fw / 4, fh / 2, face + 0.015, false);
+      part(opening, MAT.firebox, sx * ow / 4, 0.1 + oh / 2, face + 0.031, false);
     }
-    if (s.position) pos = s.position;
+  }
+
+  buildSpeaker(s, cfg) {
+    const type = s.type || 'tower';
+    const { pos, rotY, az, facing } = placeSpeaker(s, cfg);
     const base = m4.compose(pos, rotY);
-    const sp = { id: s.id, role: s.channel, label: s.label, detail: s.detail || '', pos, rotY, az, type, glow: 0 };
+    const sp = { id: s.id, role: s.channel, label: s.label, detail: s.detail || '', pos, rotY, az, facing, type, glow: 0 };
     this.speakers[s.id] = sp;
     const driver = (x, y, z, r, accent = false) => {
       const mat = this.local(base, [x, y, z]);
@@ -440,17 +498,24 @@ export class Room {
       this.cones.push({ node: cone, base: mat, role: s.channel, r, speaker: s.id });
     };
     if (type === 'tower') {
-      const h = s.height || 1.1;
-      this.add(this.mesh('plinth', () => roundedBox(0.37, 0.035, 0.47, 0.01, 2)), MAT.satin, this.local(base, [0, 0.0175, 0]));
-      this.add(this.mesh(`tower${h}`, () => roundedBox(0.3, h, 0.4, 0.028, 4)), MAT.gloss, this.local(base, [0, 0.035 + h / 2, 0]));
-      const top = 0.035 + h;
-      this.add(this.mesh('horn', () => roundedBox(0.25, 0.15, 0.03, 0.012, 3)), MAT.horn, this.local(base, [0, top - 0.13, 0.2]));
-      this.add(this.mesh('throat', () => cylinder(0.022, 0.02, 24)), MAT.trim, this.local(base, [0, top - 0.13, 0.215]));
-      driver(0, top - 0.34, 0.2, 0.082, true);
-      driver(0, top - 0.57, 0.2, 0.082, true);
-      driver(0, top - 0.8, 0.2, 0.082, true);
-      this.shadows.push({ pos: [pos[0], pos[2]], size: [0.75, 0.85], s: 0.75 });
-      this.picks.push({ id: s.id, label: s.label, center: v3.add(pos, [0, h / 2, 0]), rotY, half: [0.2, h / 2 + 0.05, 0.25] });
+      // modelled on the JBL Studio L890 (259 x 1073 x 380 mm with feet): a 1" titanium dome in a waveguide with a
+      // 3/4" super-tweeter above it, a 4" midrange, two 8" woofers and two front ports
+      const h = s.height || 1.045, tw = 0.26, td = 0.36, fz = td / 2;
+      this.add(this.mesh('plinth', () => roundedBox(tw + 0.04, 0.028, td + 0.02, 0.008, 2)), MAT.satin, this.local(base, [0, 0.014, 0]));
+      this.add(this.mesh(`tower${h}`, () => roundedBox(tw, h, td, 0.03, 4)), MAT.gloss, this.local(base, [0, 0.028 + h / 2, 0]));
+      const top = 0.028 + h;
+      this.add(this.mesh('waveguide', () => roundedBox(0.19, 0.12, 0.024, 0.03, 4)), MAT.horn, this.local(base, [0, top - 0.13, fz]));
+      this.add(this.mesh('throat', () => cylinder(0.016, 0.02, 24)), MAT.trim, this.local(base, [0, top - 0.13, fz + 0.012]));
+      this.add(this.mesh('uhf', () => cylinder(0.011, 0.012, 20)), MAT.trim, this.local(base, [0, top - 0.045, fz + 0.004]));
+      driver(0, top - 0.27, fz, 0.046, false);
+      driver(0, top - 0.45, fz, 0.083, false);
+      driver(0, top - 0.67, fz, 0.083, false);
+      for (const px of [-0.055, 0.055]) {
+        this.add(this.mesh('port', () => cylinder(0.026, 0.012, 24)), MAT.horn, this.local(base, [px, 0.2, fz + 0.002]));
+        this.add(this.mesh('portFlare', () => torus(0.028, 0.006, 24, 6)), MAT.satin, this.local(base, [px, 0.2, fz + 0.004]));
+      }
+      this.shadows.push({ pos: [pos[0], pos[2]], size: [0.7, 0.8], s: 0.75 });
+      this.picks.push({ id: s.id, label: s.label, center: v3.add(pos, [0, h / 2, 0]), rotY, half: [tw / 2 + 0.03, h / 2 + 0.05, td / 2 + 0.03] });
       sp.top = [pos[0], top, pos[2]];
     } else if (type === 'center') {
       const cw = s.width || 0.95;
@@ -477,31 +542,24 @@ export class Room {
 
   buildCouch(c, z) {
     const base = m4.compose([0, 0, z], Math.PI); // front faces -z (towards the TV)
-    const leather = { albedo: (c.color || [0.045, 0.032, 0.026]).map((v) => v * 1.8), rough: 0.42, pattern: 3 };
+    // black leather: the sheen (low roughness) is what shows its shape in a dark room
+    const leather = { albedo: (c.color || [0.045, 0.032, 0.026]).map((v) => v * 1.8), rough: 0.3, pattern: 3 };
     const seats = c.seats || 2;
-    const seatW = 0.6, arm = 0.2, mid = 0.25;
-    const total = seats * seatW + 2 * arm + (seats - 1) * mid;
+    const seatW = 0.66, arm = 0.3; // seats side by side; the cupholders are in the wide outer arms
+    const total = seats * seatW + 2 * arm;
     const L = (p, rx = 0) => this.local(base, p, 0, rx);
-    this.add(this.mesh(`couchBase${total}`, () => roundedBox(total, 0.28, 0.95, 0.04, 3)), { ...leather, albedo: leather.albedo.map((v) => v * 0.7) }, L([0, 0.14, 0]));
-    let x = -total / 2 + arm;
+    this.add(this.mesh(`couchBase${total}`, () => roundedBox(total, 0.28, COUCH_DEPTH, 0.04, 3)), { ...leather, albedo: leather.albedo.map((v) => v * 0.7) }, L([0, 0.14, 0]));
     for (let i = 0; i < seats; i++) {
-      const cx = x + seatW / 2;
-      this.add(this.mesh('seat', () => roundedBox(seatW, 0.17, 0.72, 0.07, 5)), leather, L([cx, 0.36, 0.06]));
-      this.add(this.mesh('back', () => roundedBox(seatW - 0.02, 0.6, 0.24, 0.1, 5)), leather, L([cx, 0.72, -0.34], 0.14));
-      this.add(this.mesh('pillow', () => roundedBox(seatW - 0.08, 0.2, 0.17, 0.08, 5)), leather, L([cx, 0.98, -0.26], 0.2));
-      x += seatW;
-      if (i < seats - 1) {
-        const mx = x + mid / 2;
-        this.add(this.mesh('console2', () => roundedBox(mid, 0.55, 0.92, 0.05, 4)), leather, L([mx, 0.275, -0.01]));
-        for (const cz of [0.22, 0.36]) {
-          this.add(this.mesh('cup', () => cylinder(0.042, 0.012, 24)), MAT.horn, L([mx, 0.556, cz], Math.PI / 2));
-          this.add(this.mesh('cupLed', () => torus(0.044, 0.004, 24, 5)), { albedo: [0, 0, 0], emissive: [0.05, 0.25, 0.9] }, L([mx, 0.558, cz], Math.PI / 2), { cupLed: true });
-        }
-        x += mid;
-      }
+      const cx = -total / 2 + arm + seatW * (i + 0.5);
+      this.add(this.mesh('seat', () => roundedBox(seatW - 0.02, 0.17, 0.72, 0.07, 5)), leather, L([cx, 0.36, 0.06]));
+      this.add(this.mesh('back', () => roundedBox(seatW - 0.04, 0.6, 0.24, 0.1, 5)), leather, L([cx, 0.72, -0.34], 0.14));
+      this.add(this.mesh('pillow', () => roundedBox(seatW - 0.1, 0.2, 0.17, 0.08, 5)), leather, L([cx, 0.98, -0.26], 0.2));
     }
     for (const sx of [-1, 1]) {
-      this.add(this.mesh('arm', () => roundedBox(arm, 0.62, 0.95, 0.07, 4)), leather, L([sx * (total / 2 - arm / 2), 0.31, -0.01]));
+      const ax = sx * (total / 2 - arm / 2);
+      this.add(this.mesh('arm', () => roundedBox(arm, 0.62, COUCH_DEPTH, 0.07, 4)), leather, L([ax, 0.31, -0.01]));
+      this.add(this.mesh('cup', () => cylinder(0.042, 0.012, 24)), MAT.horn, L([ax, 0.626, 0.27], Math.PI / 2));
+      this.add(this.mesh('cupLed', () => torus(0.044, 0.004, 24, 5)), { albedo: [0, 0, 0], emissive: [0.05, 0.25, 0.9] }, L([ax, 0.628, 0.27], Math.PI / 2), { cupLed: true });
     }
     this.shadows.push({ pos: [0, z], size: [total + 0.6, 1.5], s: 0.85 });
     this.picks.push({ id: 'couch', label: 'Couch', center: [0, 0.5, z], rotY: 0, half: [total / 2, 0.55, 0.5] });
@@ -687,6 +745,10 @@ export class Room {
     place(this.walls.back, [0, lift, back + (sh.back || 0)]);
     place(this.walls.frontL, [-W / 4 - (sh.split || 0), lift, front - (sh.front || 0)]);
     place(this.walls.frontR, [W / 4 + (sh.split || 0), lift, front - (sh.front || 0)]);
+    for (const p of this.frontParts || []) {
+      const y = p.scaleY ? p.pos[1] * hs : p.pos[1];
+      p.node.model = m4.compose([p.pos[0] + p.side * (sh.split || 0), y, p.pos[2] - (sh.front || 0)], 0, [1, p.scaleY ? hs : 1, 1]);
+    }
     // side walls get longer as the room grows so the corners stay closed
     const grow = (D + (sh.front || 0) + (sh.back || 0)) / D;
     for (const k of ['left', 'right']) {
