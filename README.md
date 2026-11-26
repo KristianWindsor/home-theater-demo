@@ -5,8 +5,10 @@ A home-theater showcase that runs in a browser on the machine connected to the T
 - **3D home screen**: a model of the room (couch, four towers, center, the subwoofer, the TV, the Hue
   lights). Click a speaker and a sound plays from **only that speaker**; click the sub for a sub drop; click
   the TV for movies; click the couch to sit down. Speakers move and lights glow with the actual output levels.
-- **Demos**: built-in synthesized experiences (channel check, a helicopter orbiting the couch, a thunderstorm
-  with lightning in the lights, a 120→18 Hz sub sweep) plus your own demo clips (Dolby/DTS trailers etc.).
+- **Demos**: *Shows* (five composed surround experiences where the music, where each sound sits in the room,
+  the picture and the lights all come from one score, plus a helicopter orbiting the couch and a thunderstorm
+  with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips
+  (Dolby/DTS trailers etc.). See [Experiences](#experiences).
 - **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, scene fades, and your
   starred scenes as tiles on the Movies page. Mark scenes while watching with **B** (start) and **E** (end).
 - **Music visualizer**: each song is analyzed once (beats, downbeats, drums, harmony, key, sections, builds,
@@ -118,6 +120,35 @@ Scenes live in `config/catalog.json`, keyed by file name:
 The shipped catalog has a frame-checked scene list for The Dark Knight, keyed `The Dark Knight (2008).mp4`:
 name your copy to match. If its studio logos run longer or shorter, shift the times (or fix them with B/E).
 
+## Experiences
+
+**Demos → Shows.** Each piece is one score that drives the music, the position of every sound in the
+room, the picture and the Hue lights, so they can't drift apart.
+
+| | |
+|---|---|
+| **Awakening** · 1:41 · in the 3D room | A wooden tick behind your shoulder, an answer from across the room, then each tower joins with its own instrument, a melody travels around the couch, the walls and ceiling fold away into a vast space, and it all folds back. |
+| **Glass Orchard** · 2:34 | A glass tree grown by the music: plucks grow branches, chords become membranes, the bass ripples the ground, percussion shatters fruit. A droplet falls *through* the camera mid-way. Each instrument lives in its own corner. |
+| **Under the Ice** · 2:08 | A frozen lake creaks; a fracture races from the front-right speaker to behind your left shoulder; something the size of the room passes underneath on the sub; a whale calls and is answered from around the room; the deep lights up. |
+| **Lighthouse** · 2:12 | Waves around the seats, a lighthouse signalling from the center speaker into silence. Then an answer from behind you, then many; the lights become a constellation and the horizon rises with a choir. |
+| **Marble Machine** · 1:44 | A machine drawn in light around your seat. The marble rolls off the right edge of the screen and you hear it circle behind you; every pendulum, xylophone, string, drum and glass wheel it touches keeps playing, so it composes the groove. A tube fires it over your head into a spiral around the room, it taps one tiny button, and the vast machine around the room wakes for one enormous chord. |
+
+- **Every sound is synthesized** (plucked and bowed strings, struck glass, wood and metal, voices, waves, ice,
+  whale song, the rolling marble): no samples, nothing downloaded, nothing to license. When a piece starts, a
+  background worker renders the soundtrack for *your* speaker angles from `config/room.json` (it runs several
+  times faster than real time) and streams it while it plays.
+- **Discrete 5.1.** With the OS device set to 5.1 (see above) every channel goes to its own speaker and the
+  badge in the controls says **5.1**. On stereo output it says *(folded down)* and the surrounds are mixed into
+  L/R. Move the mouse to show the controls: the speaker map lights each speaker with its own channel's level,
+  which is the quickest way to check that sound behind you really comes from behind you.
+- **LFE** is written 10 dB down on the LFE channel (the film convention; the receiver adds the 10 dB back).
+- **Lights**: the pieces drive the light rig (the virtual Hue lights in the 3D room) with their own cues.
+- **Controls**: Esc/Backspace or the back button stops; the timeline shows chapters; if the TV delays the
+  picture, *Settings → A/V offset* shifts the visuals.
+- **Hear a mix without the TV**: `node scripts/render_experience.mjs marble-eventually` writes exactly what the
+  app plays as a 6-channel 24-bit WAV (FL FR FC LFE SL SR) for your `room.json`; `--stereo` writes the
+  fold-down, `--list` lists the pieces.
+
 ## The music visualizer
 
 ```
@@ -186,6 +217,7 @@ plays on. On the home screen: drag to orbit, scroll to zoom, keys **1–6** trig
 | Player | Space/K play-pause · ←/→ ±10 s (Shift ±60) · N/P next/previous scene · B mark scene start · E mark scene end · F fullscreen · +/− volume |
 | Visualizer | see above |
 | Home | 1–6 speakers · C couch |
+| Experience | Esc/Backspace stops · any key or the mouse shows the controls |
 
 ## Configuration
 
@@ -239,7 +271,7 @@ New songs are analyzed on the server after the restart.
 server/          zero-dependency Node server: library + ffprobe cache, byte-range streaming, analysis queue,
                  thumbnails/covers, lossless fallbacks, scene saving, server-sent events
 analyzer/        the music analyzer (Python) and its tests
-scripts/         prepare_media.py, make_test_media.py, synth_song.py
+scripts/         prepare_media.py, make_test_media.py, synth_song.py, render_experience.mjs
 config/          catalog.json (scenes), room.json (3D room)
 public/js/
   core/          router, spatial navigation, API, settings, codec compatibility
@@ -247,7 +279,9 @@ public/js/
   viz/           score decoding, live analysis, director, palette, visualizer, worlds/
   room/          3D room renderer, meshes, picking
   lights/        virtual Hue light rig (+ the planned Hue sink)
-  screens/       home, movies, player, demos, music, visualizer, settings
+  experiences/   composed pieces: core/ (timeline, runner, stage), audio/ (DSP, instruments, studio,
+                 worker renderer) and one folder per piece (score.js, audio.js, scene.js)
+  screens/       home, movies, player, demos, experience, music, visualizer, settings
 ```
 
 ## Roadmap

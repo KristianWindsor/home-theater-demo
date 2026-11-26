@@ -5,7 +5,7 @@ import { Post } from '../gl/post.js';
 import { m4, v3, clamp, lerp, easeInOut } from '../gl/math.js';
 import { roundedBox, cylinder, speakerCone, torus, plane, quad } from './meshes.js';
 
-const MAX_LIGHTS = 10;
+const MAX_LIGHTS = 16;
 
 const STD_VS = `#version 300 es
 layout(location = 0) in vec3 aPos;
@@ -41,6 +41,9 @@ uniform vec4 uLDir[${MAX_LIGHTS}];   // xyz spot direction, w = cos(outer angle)
 uniform float uLRange[${MAX_LIGHTS}];
 uniform sampler2D uTex;
 uniform float uUseTex, uTexGain;
+uniform vec3 uGrid;      // infinite floor grid glow
+uniform vec2 uFade;      // infinite floor fade distances
+uniform vec4 uRib;       // wall ribs: rgb glow, a = spacing (0 = off)
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash12(i), hash12(i + vec2(1, 0)), u.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), u.x), u.y); }
@@ -50,6 +53,7 @@ void main() {
   vec3 V = normalize(uCam - vPos);
   vec3 albedo = uAlbedo;
   float rough = uRough;
+  vec3 extra = vec3(0.0);
   if (uPattern == 1) {            // carpet
     float n = vnoise(vUV * 180.0) * 0.5 + vnoise(vUV * 37.0) * 0.5;
     albedo *= 0.8 + 0.4 * n;
@@ -65,6 +69,25 @@ void main() {
     vec2 q = abs(vUV / vec2(3.0, 2.4) - 0.5);
     float border = smoothstep(0.43, 0.44, max(q.x, q.y)) - smoothstep(0.47, 0.48, max(q.x, q.y));
     albedo = mix(albedo, albedo * 2.2, border) * (0.85 + 0.3 * vnoise(vUV * 120.0));
+  } else if (uPattern == 5) {     // the floor beyond the room: polished black with a faint grid of light
+    vec2 g = abs(fract(vPos.xz / 2.0) - 0.5);
+    float line = smoothstep(0.488, 0.5, max(g.x, g.y));
+    float d = length(vPos.xz - uCam.xz);
+    float fade = 1.0 - smoothstep(uFade.x, uFade.y, d);
+    float room = step(3.4, abs(vPos.x)) + step(2.9, vPos.z) + step(vPos.z, -3.9);
+    extra += uGrid * line * fade * min(room, 1.0);
+    albedo *= fade;
+  }
+  if (uRib.a > 0.0) {             // light seams on the walls (vertical) and ceiling (coffers) of the expanded hall
+    if (abs(N.y) > 0.5) {
+      vec2 g = abs(fract(vPos.xz / uRib.a) - 0.5);
+      extra += uRib.rgb * smoothstep(0.485, 0.5, max(g.x, g.y)) * 0.8;
+    } else {
+      vec3 T = normalize(cross(N, vec3(0.0, 1.0, 0.0)));
+      float u = dot(vPos, T) / uRib.a;
+      float rib = smoothstep(0.485, 0.5, abs(fract(u) - 0.5));
+      extra += uRib.rgb * rib * exp(-vPos.y * 0.12);
+    }
   }
   float shin = mix(180.0, 6.0, rough);
   float specK = mix(0.6, 0.03, rough);
@@ -85,7 +108,7 @@ void main() {
     col += uLCol[i] * att * (albedo * (1.0 - uMetal) * ndl + spec * fres * ndl);
   }
   if (uUseTex > 0.5) col = pow(texture(uTex, vUV).rgb, vec3(2.2)) * uTexGain + col * 0.15;
-  col += uEmissive;
+  col += uEmissive + extra;
   col += uHover * vec3(0.05, 0.08, 0.12) * (0.4 + pow(1.0 - max(dot(N, V), 0.0), 2.0) * 3.0);
   outColor = vec4(col, 1.0);
 }`;
@@ -140,7 +163,42 @@ void main() {
   outColor = vec4(c, 1.0);
 }`;
 
-class Mesh {
+const SKY_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform mat4 uInvVP;
+uniform vec3 uCam, uTop, uHorizon, uGlow;
+uniform float uAmount, uTime, uStars;
+float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2(1, 0)), u.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), u.x), u.y); }
+float stars(vec2 p, float scale, float thr) {
+  vec2 c = floor(p * scale);
+  vec2 f = fract(p * scale) - 0.5;
+  float h = hash12(c);
+  vec2 o = vec2(hash12(c + 7.1), hash12(c + 3.3)) - 0.5;
+  float d = length(f - o * 0.7);
+  float tw = 0.75 + 0.25 * sin(uTime * (1.0 + h * 3.0) + h * 40.0);
+  return step(thr, h) * smoothstep(0.09, 0.0, d) * tw * (h - thr) / (1.0 - thr);
+}
+void main() {
+  vec4 p = uInvVP * vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
+  vec3 d = normalize(p.xyz / p.w - uCam);
+  float h = d.y;
+  vec3 col = mix(uHorizon, uTop, smoothstep(-0.02, 0.45, h));
+  col += uGlow * exp(-abs(h) * 7.0);
+  vec2 sp = vec2(atan(d.x, -d.z), asin(clamp(d.y, -1.0, 1.0)));
+  float by = (d.y - 0.3 * sin(sp.x + 0.7) - 0.15) * 3.6;
+  float band = exp(-by * by);
+  float neb = vnoise(sp * 3.0 + 4.0) * 0.6 + vnoise(sp * 9.0) * 0.4;
+  col += vec3(0.05, 0.06, 0.12) * band * smoothstep(0.35, 0.9, neb) * 0.9;
+  float s = stars(sp, 60.0, 0.86) + stars(sp, 140.0, 0.92) * 0.7 + stars(sp, 23.0, 0.965) * 2.0;
+  col += vec3(0.85, 0.9, 1.0) * s * uStars * smoothstep(-0.05, 0.1, h) * (0.5 + band);
+  outColor = vec4(col * uAmount, 1.0);
+}`;
+
+export class Mesh {
   constructor(gl, geo) {
     this.gl = gl;
     this.vao = gl.createVertexArray();
@@ -217,6 +275,7 @@ export class Room {
     this.shadowProg = new Program(gl, STD_VS, SHADOW_FS, 'room-shadow');
     this.glowProg = new Program(gl, GLOW_VS, GLOW_FS, 'room-glow');
     this.tvProg = new Program(gl, FULLSCREEN_VS, TV_FS, 'room-tv');
+    this.skyProg = new Program(gl, FULLSCREEN_VS, SKY_FS, 'room-sky');
     this.post = new Post(gl);
     this.target = new Target(gl, 4, 4, { hdr: true, depth: true });
     this.tvTarget = new Target(gl, 640, 360, { hdr: false });
@@ -242,6 +301,14 @@ export class Room {
     this.camGoal = { ...this.cam, target: this.cam.target.slice() };
     this.presets = {};
     this.lastInteract = -1e9;
+    // hooks for experiences that take over the room (see experiences/room-wakes-up/scene.js)
+    this.camOverride = null;   // { eye, target, fov }
+    this.extraLights = [];     // [{ pos, col, dir, cos, range }]
+    this.layers = [];          // [{ draw(ctx) }] drawn into the HDR target after the room
+    this.postOverride = null;  // merged into the post-processing parameters
+    this.sky = { amount: 0, top: [0.0015, 0.002, 0.006], horizon: [0.006, 0.008, 0.02], glow: [0.0, 0.0, 0.0], stars: 1 };
+    this.ambient = 1;          // scales the room's own (non-Hue) lights
+    this.walls = {};
     this.build(config);
     this.setCard('MARQUEE', 'Home Theater');
   }
@@ -276,11 +343,24 @@ export class Room {
     this.add(this.mesh(`floor${W}x${D}`, () => plane(W, D)), MAT.carpet, m4.compose([0, 0, midZ]));
     const cz = cfg.couch?.z ?? 0.3;
     this.add(this.mesh('rug', () => plane(3.0, 2.4)), MAT.rug, m4.compose([0, 0.004, cz - 0.2]));
-    const wall = (w, h, pos, rotY, mat) => this.add(this.mesh(`wall${w}x${h}`, () => quad(w, h)), { ...mat }, m4.compose(pos, rotY), { wall: true, uvScale: [w, h] });
-    wall(W, H, [0, H / 2, front], 0, MAT.frontWall);
-    wall(D, H, [-W / 2, H / 2, midZ], Math.PI / 2, MAT.wall);
-    wall(D, H, [W / 2, H / 2, midZ], -Math.PI / 2, MAT.wall);
-    wall(W, H, [0, H / 2, back], Math.PI, MAT.wall);
+    const wall = (name, w, h, pos, rotY, mat) => {
+      const n = this.add(this.mesh(`wall${w}x${h}`, () => quad(w, h)), { ...mat }, m4.compose(pos, rotY), { wall: true, uvScale: [w, h] });
+      n.base = { pos, rotY };
+      this.walls[name] = n;
+      return n;
+    };
+    // the front wall is two halves so it can part like doors (they meet invisibly behind the TV)
+    wall('frontL', W / 2, H, [-W / 4, H / 2, front], 0, MAT.frontWall);
+    wall('frontR', W / 2, H, [W / 4, H / 2, front], 0, MAT.frontWall);
+    wall('left', D, H, [-W / 2, H / 2, midZ], Math.PI / 2, MAT.wall);
+    wall('right', D, H, [W / 2, H / 2, midZ], -Math.PI / 2, MAT.wall);
+    wall('back', W, H, [0, H / 2, back], Math.PI, MAT.wall);
+    // a ceiling (two hinged panels) and an endless floor, both hidden unless an experience uses them
+    this.ceiling = ['L', 'R'].map((side) => this.add(this.mesh(`ceil${W / 2}x${D}`, () => quad(W / 2, D)),
+      { albedo: [0.03, 0.032, 0.04], rough: 0.9 }, m4.identity(), { hidden: true, ceilingSide: side }));
+    this.ground = this.add(this.mesh('ground', () => plane(400, 400)), { albedo: [0.012, 0.012, 0.015], rough: 0.22, pattern: 5 },
+      m4.compose([0, -0.004, 0]), { hidden: true });
+    this.shape = null;
     // TV
     const inches = cfg.tv?.diagonalInches || 100;
     const tvW = inches * 0.0254 * 0.8716, tvH = inches * 0.0254 * 0.4903;
@@ -502,12 +582,13 @@ export class Room {
   }
 
   _viewProj(w, h) {
-    const eye = this.eye();
+    const o = this.camOverride;
+    const eye = o ? o.eye : this.eye();
     const sh = this.shake;
-    const tgt = v3.add(this.cam.target, [(Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, 0]);
-    const view = m4.lookAt(eye, tgt);
-    const proj = m4.perspective(0.75, w / h, 0.05, 60);
-    return { vp: m4.multiply(proj, view), eye, view };
+    const tgt = v3.add(o ? o.target : this.cam.target, [(Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, 0]);
+    const view = m4.lookAt(eye, tgt, o && o.up ? o.up : [0, 1, 0]);
+    const proj = m4.perspective(o && o.fov ? o.fov : 0.75, w / h, 0.05, o && o.far ? o.far : 60);
+    return { vp: m4.multiply(proj, view), eye, view, target: tgt, proj };
   }
 
   /** Which pickable object is under the pointer (NDC coords). */
@@ -583,6 +664,58 @@ export class Room {
     this.activity[id] = v;
   }
 
+  /**
+   * Reshape the room (experiences): walls slide out and grow, the front wall parts, the ceiling hinges open.
+   * shape = { left, right, front, back (meters outward), split (front halves apart), height (wall scale),
+   *           ceiling: 0..1 shown, open: 0..1 hinge, ground: 0..1, ribs: [r,g,b], ribSpacing } or null to reset.
+   */
+  setShape(shape) {
+    this.shape = shape;
+    const { W, H, front, back } = this.bounds;
+    const midZ = (front + back) / 2, D = back - front;
+    const sh = shape || {};
+    const hs = sh.height || 1;
+    const lift = (H * hs) / 2;
+    const place = (n, pos) => {
+      n.model = m4.compose(pos, n.base.rotY, [1, hs, 1]);
+    };
+    place(this.walls.left, [-W / 2 - (sh.left || 0), lift, midZ]);
+    place(this.walls.right, [W / 2 + (sh.right || 0), lift, midZ]);
+    place(this.walls.back, [0, lift, back + (sh.back || 0)]);
+    place(this.walls.frontL, [-W / 4 - (sh.split || 0), lift, front - (sh.front || 0)]);
+    place(this.walls.frontR, [W / 4 + (sh.split || 0), lift, front - (sh.front || 0)]);
+    // side walls get longer as the room grows so the corners stay closed
+    const grow = (D + (sh.front || 0) + (sh.back || 0)) / D;
+    for (const k of ['left', 'right']) {
+      const n = this.walls[k];
+      const z = midZ + ((sh.back || 0) - (sh.front || 0)) / 2;
+      n.model = m4.multiply(m4.compose([n.model[12], lift, z], n.base.rotY), m4.compose([0, 0, 0], 0, [grow, hs, 1]));
+    }
+    const wide = (W + (sh.left || 0) + (sh.right || 0)) / W;
+    const bw = this.walls.back;
+    bw.model = m4.multiply(m4.compose([((sh.right || 0) - (sh.left || 0)) / 2, lift, back + (sh.back || 0)], Math.PI), m4.compose([0, 0, 0], 0, [wide, hs, 1]));
+    // ceiling panels hinge on the side walls' top edges and swing up and out
+    const showCeil = (sh.ceiling || 0) > 0.001;
+    const open = (sh.open || 0) * 2.05;
+    for (const n of this.ceiling) {
+      n.hidden = !showCeil;
+      const sgn = n.ceilingSide === 'L' ? -1 : 1;
+      const hingeX = sgn * (W / 2 + (n.ceilingSide === 'L' ? sh.left || 0 : sh.right || 0));
+      const span = W / 2 + (n.ceilingSide === 'L' ? sh.left || 0 : sh.right || 0);
+      const a = -sgn * open; // the inner edge lifts
+      const c = Math.cos(a), si = Math.sin(a);
+      const rz = new Float32Array([c, si, 0, 0, -si, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      const toCenter = m4.compose([-sgn * span / 2, 0, 0], 0, [span / (W / 2), 1, grow], Math.PI / 2);
+      n.model = m4.multiply(m4.multiply(m4.compose([hingeX, H * hs, midZ + ((sh.back || 0) - (sh.front || 0)) / 2]), rz), toCenter);
+      n.mat.emissive = [0, 0, 0];
+    }
+    this.ground.hidden = !((sh.ground || 0) > 0.001);
+    this.groundGlow = (sh.ground || 0);
+    this.ribs = sh.ribs || null;
+    this.ribSpacing = sh.ribSpacing || 1.6;
+    for (const n of this.nodes) if (n.model !== n._nmFor) n.normal = m4.normalMatrix(n.model);
+  }
+
   idForRole(role) {
     for (const id in this.speakers) if (this.speakers[id].role === role) return id;
     return null;
@@ -591,13 +724,15 @@ export class Room {
   _lights(fixtures) {
     const L = [];
     const tvc = this.tvColor;
+    const amb = this.ambient;
     L.push({ pos: [0, this.tv.y - 0.1, this.tv.z + 1.1], col: tvc.map((v) => v * 9), dir: [0, -0.25, 1], cos: Math.cos(1.0), range: 7 });
-    L.push({ pos: [0, 2.6, -0.2], col: [0.75, 0.6, 0.45].map((v) => v * (1 + this.flash * 12)), dir: [0, -1, 0], cos: Math.cos(1.25), range: 8 });
-    L.push({ pos: [0.5, 2.3, 2.4], col: [0.16, 0.2, 0.3].map((v) => v * (1 + this.flash * 8)), dir: [0, 0, 0], cos: -2, range: 9 });
+    L.push({ pos: [0, 2.6, -0.2], col: [0.75, 0.6, 0.45].map((v) => v * amb * (1 + this.flash * 12)), dir: [0, -1, 0], cos: Math.cos(1.25), range: 8 });
+    L.push({ pos: [0.5, 2.3, 2.4], col: [0.16, 0.2, 0.3].map((v) => v * amb * (1 + this.flash * 8)), dir: [0, 0, 0], cos: -2, range: 9 });
     for (const f of fixtures) {
       L.push({ pos: f.pos, col: f.color.map((v) => v * 4.5 * (f.gain || 1)), dir: f.dir, cos: f.cos, range: f.range });
     }
     if (this.orb) L.push({ pos: this.orb.pos, col: [1.1, 0.85, 0.55], dir: [0, 0, 0], cos: -2, range: 3.2 });
+    for (const x of this.extraLights) L.push(x);
     return L.slice(0, MAX_LIGHTS);
   }
 
@@ -623,7 +758,18 @@ export class Room {
     gl.depthMask(true);
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
-    const { vp, eye } = this._viewProj(this.target.w, this.target.h);
+    const { vp, eye, view, target } = this._viewProj(this.target.w, this.target.h);
+    if (this.sky.amount > 0.001) {
+      // the world beyond the walls (only visible once an experience opens the room up)
+      gl.disable(gl.DEPTH_TEST);
+      gl.depthMask(false);
+      const k = this.sky;
+      this.skyProg.use().setAll({ uInvVP: m4.invert(vp), uCam: eye, uTop: k.top, uHorizon: k.horizon, uGlow: k.glow,
+        uAmount: k.amount, uTime: this.time, uStars: k.stars });
+      drawFullscreen(gl);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthMask(true);
+    }
     const lights = this._lights(fixtures || []);
     const n = lights.length;
     const lp = new Float32Array(MAX_LIGHTS * 3), lc = new Float32Array(MAX_LIGHTS * 3);
@@ -635,14 +781,18 @@ export class Room {
       ld.set([...d, l.dir && v3.len(l.dir) > 0 ? l.cos : -2], i * 4);
       lr[i] = l.range;
     });
-    const amb = 1.6 + this.flash * 12;
+    const amb = (1.6 + this.flash * 12) * this.ambient;
+    const skyAmb = this.sky.amount * 0.6; // moonlight once the room is open to the sky
     const P = this.std.use();
     P.setAll({
       uViewProj: vp, uCam: eye, uLightCount: n, uLPos: lp, uLCol: lc, uLDir: ld, uLRange: lr, uTime: this.time,
-      uAmbSky: [0.014 * amb, 0.016 * amb, 0.024 * amb], uAmbGround: [0.006 * amb, 0.005 * amb, 0.005 * amb],
+      uAmbSky: [0.014 * amb + 0.02 * skyAmb, 0.016 * amb + 0.026 * skyAmb, 0.024 * amb + 0.05 * skyAmb], uAmbGround: [0.006 * amb, 0.005 * amb, 0.005 * amb],
+      uGrid: [0.025, 0.045, 0.085].map((v) => v * (this.groundGlow || 0)), uFade: [8, 45],
     });
+    const ribs = this.ribs ? [...this.ribs, this.ribSpacing] : [0, 0, 0, 0];
     P.tex('uTex', tvTex); // every draw samples a valid texture (never the target we render into)
     for (const node of this.nodes) {
+      if (node.hidden) continue;
       const m = node.mat;
       let emissive = m.emissive || [0, 0, 0];
       if (node.fixture) {
@@ -658,7 +808,8 @@ export class Room {
         uModel: node.model, uNormalMat: node.model === node._nmFor ? node.normal : (node.normal = m4.normalMatrix(node.model), node._nmFor = node.model, node.normal),
         uAlbedo: m.albedo, uRough: m.rough, uMetal: m.metal || 0, uEmissive: emissive, uPattern: m.pattern || 0,
         uHover: hoverId && (node.owner === hoverId || node.fixture === hoverId) ? 1 : 0,
-        uUseTex: node.screen ? 1 : 0, uTexGain: 1.6,
+        uUseTex: node.screen ? 1 : 0, uTexGain: 1.6 * (this.tvGain ?? 1),
+        uRib: node.wall || node.ceilingSide ? ribs : [0, 0, 0, 0],
       });
       node.mesh.draw();
     }
@@ -680,7 +831,6 @@ export class Room {
     // glows (additive)
     gl.blendFunc(gl.ONE, gl.ONE);
     const G = this.glowProg.use();
-    const view = m4.lookAt(eye, this.cam.target);
     const right = [view[0], view[4], view[8]], up = [view[1], view[5], view[9]];
     G.setAll({ uViewProj: vp, uRight: right, uUp: up });
     const gq = this.mesh('glowQuad', () => quad(2, 2));
@@ -698,7 +848,7 @@ export class Room {
         // a soft halo in front of the drivers, as if the sound itself glowed
         const fwd = [Math.sin(sp.rotY), 0, Math.cos(sp.rotY)];
         const mid = [sp.pos[0] + fwd[0] * 0.32, Math.max(0.25, sp.top[1] * 0.6), sp.pos[2] + fwd[2] * 0.32];
-        glow(mid, 0.28 + sp.glow * 0.22, [0.3, 0.5, 1.0].map((v) => v * sp.glow * 0.35), 4);
+        glow(mid, 0.28 + sp.glow * 0.22, (sp.glowColor || [0.3, 0.5, 1.0]).map((v) => v * sp.glow * 0.35), 4);
       }
     }
     if (this.orb) {
@@ -708,10 +858,24 @@ export class Room {
     }
     gl.disable(gl.BLEND);
     gl.depthMask(true);
+    if (this.layers.length) {
+      const lctx = { gl, vp, eye, view, target, right, up, time: this.time, w: this.target.w, h: this.target.h, room: this };
+      for (const L of this.layers) {
+        try {
+          L.draw(lctx);
+        } catch (e) {
+          if (!L._err) console.error('[room layer]', e);
+          L._err = e;
+        }
+      }
+      gl.disable(gl.BLEND);
+      gl.depthMask(true);
+      gl.enable(gl.DEPTH_TEST);
+    }
     gl.disable(gl.DEPTH_TEST);
     this.post.run(this.target.tex, this.target.w, this.target.h, w, h, {
       bloomStrength: 0.12, threshold: 0.7, exposure: 1.75, vignette: 0.5, grain: 0.018, saturation: 1.05,
-      flash: [this.flash * 0.25, this.flash * 0.27, this.flash * 0.32],
+      flash: [this.flash * 0.25, this.flash * 0.27, this.flash * 0.32], ...(this.postOverride || {}),
     }, this.time);
   }
 

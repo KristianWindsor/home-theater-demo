@@ -53,6 +53,12 @@ const P = {
   marker: '<path d="M6 3h12v18l-6-4-6 4z"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  // experiences (drawn large on their cards)
+  'xp-room-wakes-up': '<path d="M3 20h18"/><rect x="7" y="6" width="10" height="6" rx="0.6"/><path d="M4 18v-6M20 18v-6M6.5 19v-2.5M17.5 19v-2.5"/><circle cx="12" cy="9" r="7.5" stroke-dasharray="1.2 2.2"/><path d="M9.5 17h5"/>',
+  'xp-glass-orchard': '<path d="M12 21v-7M12 14c0-3-3-4-5-7M12 14c0-2 3-3 4-6M12 17c2-1 4-1 6-3M9 10l-3 1M14.5 10.5l2.5-3"/><circle cx="6.5" cy="6.5" r="1.4"/><circle cx="17.5" cy="7" r="1.4"/><circle cx="18.5" cy="13.5" r="1.1"/><path d="M4 21h16" stroke-dasharray="1 2"/>',
+  'xp-beneath-the-ice': '<path d="M2 7h20"/><path d="M17 7l-3 4 1 3-4 3-2 4M14 11l3 2M11 17l-3-1"/><path d="M3 16c3 2 6 3 9 2.5s5-1.5 7-1" stroke-dasharray="1.5 2"/><circle cx="6" cy="10" r="0.6"/><circle cx="9" cy="12.5" r="0.5"/>',
+  'xp-last-lighthouse': '<path d="M10 20l1-11h2l1 11M9.5 9h5M11 6.5h2V9h-2zM12 5v1.5"/><path d="M13.5 7.5L22 4M10.5 7.5L2 4" stroke-dasharray="1.2 1.6"/><path d="M2 20c2-1 3 1 5 0s3 1 5 0 3 1 5 0 3 1 5 0"/><circle cx="20" cy="15" r="0.7"/>',
+  'xp-marble-eventually': '<circle cx="6" cy="5" r="1.6"/><path d="M3 9l9 3M21 11l-8 4M4 18l8 1.5M14 19.5h6"/><path d="M17 3v5M15.5 8h3" /><circle cx="17" cy="9.6" r="1.3"/><path d="M8 13l.8 3.5"/>',
 };
 
 export function icon(name, cls = '') {

@@ -14,6 +14,8 @@ import { installNav } from './core/nav.js';
 import { toast } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
+import { ExperienceRunner } from './experiences/core/runner.js';
+import { EXPERIENCE_BY_ID } from './experiences/index.js';
 
 const FALLBACK_ROOM = {
   name: 'The Theater',
@@ -35,6 +37,7 @@ class App {
     this.listeners = new Map();
     this.mode = 'room';
     this.demo = null;
+    this.experience = null;
     this.hover = null;
     this.items = new Map();
     this.library = { items: [] };
@@ -165,6 +168,24 @@ class App {
 
   _render(dt) {
     const W = this.canvas.width, H = this.canvas.height;
+    const xp = this.experience;
+    if (xp && xp.scene) {
+      // an experience owns the screen: its scene draws (the room, or a world of its own) on the audio clock
+      this.rig.mode = 'script';
+      xp.frame(W, H, dt);
+      this.rig.update(dt, null);
+      if (xp.kind === 'room') this.emit('roomframe', this.room);
+      return;
+    }
+    if (xp && xp.kind === 'stage') {
+      const gl = this.gl;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, W, H);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      this.rig.update(dt, null);
+      return;
+    }
     const m = this.music;
     const musicOn = !!(m && m.item);
     if (musicOn) this.viz().update(m.visualTime, dt, m.playing);
@@ -182,10 +203,10 @@ class App {
         v.render(0, 0, this.tvTarget);
         const c = v.state.chord || [0.2, 0.2, 0.3];
         this.room.setTVSource(this.tvTarget.tex, c.map((x) => x * (0.15 + 0.5 * v.frame.loud)));
-        if (!this.demo) this.rig.setMode('music');
+        if (!this.demo && !this.experience) this.rig.setMode('music');
       } else {
         this.room.setTVSource(null, [0.03, 0.045, 0.08]);
-        if (!this.demo) this.rig.setMode('ambient');
+        if (!this.demo && !this.experience) this.rig.setMode('ambient');
       }
       this.rig.update(dt, musicOn ? { frame: this.viz().frame, state: this.viz().state } : null);
       const eng = this.engine;
@@ -207,7 +228,7 @@ class App {
       const r = c.getBoundingClientRect();
       return [((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1)];
     };
-    const active = () => this.mode === 'room' && this.router.current && this.router.current.name === 'home';
+    const active = () => this.mode === 'room' && !this.experience && this.router.current && this.router.current.name === 'home';
     c.addEventListener('pointerdown', (e) => {
       if (!active()) return;
       down = { x: e.clientX, y: e.clientY, moved: 0 };
@@ -310,6 +331,7 @@ class App {
     if (!def) return;
     if (!this.engine.ready) await this.enter();
     if (!this.synth) return;
+    this.stopExperience();
     this.stopDemo();
     if (this.music.playing) this.music.pause();
     const speakers = Object.values(this.room.speakers);
@@ -350,6 +372,52 @@ class App {
     this.rig.setMode('ambient');
     this.emit('demo', status);
     if (!this.router.current || this.router.current.name !== 'home') this.router.go('/');
+  }
+
+  // ---------------------------------------------------------------- experiences
+  /** Start a composed experience (see experiences/). Room experiences play on the home screen. */
+  async runExperience(id) {
+    const def = EXPERIENCE_BY_ID[id];
+    if (!def) return null;
+    if (!this.engine.ready) await this.enter();
+    if (!this.engine.ready) return null;
+    this.stopDemo();
+    this.stopExperience();
+    if (this.music.playing) this.music.pause();
+    const run = new ExperienceRunner(this, id);
+    this.experience = run;
+    this.hover = null;
+    this.rig.script = (f) => run.light(f);
+    this.rig.setMode('script');
+    run.on('end', () => {
+      if (this.experience !== run) return;
+      if (run.kind === 'room') this.stopExperience();
+    });
+    run.on('state', (st) => {
+      if (st === 'error' && this.experience === run) toast(`${def.title} could not start: ${run.error}`, 'bad', 8000);
+    });
+    this.emit('experience', run);
+    const route = def.kind === 'room' ? '/' : `/x/${id}`;
+    const here = this.router.current ? this.router.current.path : null;
+    if (here !== route) this.router.go(route);
+    run.start().catch((e) => {
+      console.error('[experience]', e);
+      if (this.experience === run) {
+        toast(`${def.title} could not start: ${e.message}`, 'bad', 8000);
+        this.stopExperience();
+      }
+    });
+    return run;
+  }
+
+  stopExperience() {
+    const run = this.experience;
+    if (!run) return;
+    this.experience = null;
+    run.stop();
+    this.rig.script = null;
+    this.rig.setMode('ambient');
+    this.emit('experience', null);
   }
 
   stopDemo() {

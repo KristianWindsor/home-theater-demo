@@ -47,6 +47,7 @@ export class LightRig {
     for (const f of this.fixtures) {
       let target;
       if (music && music.frame && music.state && this.mode === 'music') target = this._musicColor(f, music.frame, music.state);
+      else if (this.mode === 'script' && this.script) target = this.script(f) || this._ambient(f); // an experience's light cues
       else if (this.mode === 'movie') target = [0.06, 0.06, 0.065]; // dim D65-ish bias light
       else if (this.mode === 'off') target = [0, 0, 0];
       else target = this._ambient(f);
@@ -68,8 +69,9 @@ export class LightRig {
           continue;
         }
       }
-      // fast attack, slower release, like real bulbs
-      const kk = target[0] + target[1] + target[2] > f.color[0] + f.color[1] + f.color[2] ? Math.min(1, k * 2.5) : k;
+      // fast attack, slower release, like real bulbs (scripted cues already shape their own envelopes)
+      let kk = target[0] + target[1] + target[2] > f.color[0] + f.color[1] + f.color[2] ? Math.min(1, k * 2.5) : k;
+      if (this.mode === 'script') kk = Math.min(1, dt / 0.05);
       f.color = f.color.map((v, i) => v + (target[i] - v) * kk);
     }
     this.flash *= Math.exp(-dt / 0.09);

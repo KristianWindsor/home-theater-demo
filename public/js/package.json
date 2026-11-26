@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "description": "Browser ES modules. Marked as modules so Node can import them too (scripts/render_experience.mjs)."
+}

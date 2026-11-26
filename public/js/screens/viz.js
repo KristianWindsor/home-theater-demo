@@ -10,6 +10,7 @@ export function viz(root, id) {
   const app = ctx.app;
   const m = app.music;
   if (app.demo) app.stopDemo();
+  app.stopExperience();
   if (id && (!m.item || m.item.id !== id)) {
     const item = app.items.get(id);
     if (item) {

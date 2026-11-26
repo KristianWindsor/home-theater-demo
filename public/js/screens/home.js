@@ -20,14 +20,45 @@ export function home(root) {
     h('button', { class: 'dock-item', onclick: go('/music') }, icon('music'), h('span', {}, 'Music')),
     h('button', { class: 'dock-item', onclick: go('/settings') }, icon('settings'), h('span', {}, 'Settings')),
   );
+  const xpPill = h('div', { class: 'xp-pill' });
   const el = h('div', { class: 'screen home' },
     h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'MARQUEE'),
       h('div', { class: 'room-name' }, (app.library.room && app.library.room.name) || 'Home Theater')),
     h('div', { class: 'room-hint' }, 'Click a speaker to hear it alone', h('br'), 'Drag to look around · click the couch to sit'),
-    tag, banner, nowPlaying, dock,
+    tag, banner, nowPlaying, dock, xpPill,
   );
   root.appendChild(el);
   focusFirst(el);
+
+  // room experiences ("The Room Wakes Up") take over this screen: the interface fades out and back in on cue
+  let xpUnsub = [];
+  let pillTimer = 0;
+  const showPill = () => {
+    if (!app.experience || app.experience.kind !== 'room') return;
+    xpPill.classList.add('on');
+    clearTimeout(pillTimer);
+    pillTimer = setTimeout(() => xpPill.classList.remove('on'), 2600);
+  };
+  const bindXp = (run) => {
+    for (const u of xpUnsub) u();
+    xpUnsub = [];
+    if (!run || run.kind !== 'room') {
+      el.classList.remove('immersive');
+      xpPill.classList.remove('on');
+      return;
+    }
+    xpPill.replaceChildren(h('span', { class: 'title' }, run.def.title),
+      h('button', { class: 'btn small', onclick: () => app.stopExperience() }, icon('close'), 'Stop'));
+    xpUnsub.push(run.on('chrome', (visible) => el.classList.toggle('immersive', !visible)));
+    if (run.chromeHidden) el.classList.add('immersive');
+  };
+  unsubs.push(app.on('experience', bindXp));
+  bindXp(app.experience);
+  el.addEventListener('pointermove', showPill);
+  unsubs.push(() => {
+    for (const u of xpUnsub) u();
+    clearTimeout(pillTimer);
+  });
 
   // floating label over hovered / clicked objects
   let tagFor = null, tagUntil = 0, tagText = null;
@@ -116,8 +147,17 @@ export function home(root) {
     unmount() {
       for (const u of unsubs) u();
       app.hover = null;
+      if (app.experience && app.experience.kind === 'room') app.stopExperience();
     },
     onKey(e) {
+      if (app.experience && app.experience.kind === 'room') {
+        showPill();
+        if (e.key === 'Escape' || e.key === 'Backspace') {
+          app.stopExperience();
+          return true;
+        }
+        return false;
+      }
       const n = Number(e.key);
       if (n >= 1 && n <= 6) {
         const ids = Object.keys(app.room.speakers);

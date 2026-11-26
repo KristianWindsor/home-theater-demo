@@ -27,6 +27,7 @@ function buildPlaylist(app, arg, q) {
 export function player(root, arg, q) {
   const app = ctx.app;
   if (app.demo) app.stopDemo();
+  app.stopExperience();
   if (app.music.playing) app.music.pause();
   const video = document.getElementById('video');
   const pl = buildPlaylist(app, arg || '', q);
