@@ -105,7 +105,10 @@ export function home(root) {
     }
   }));
 
-  // demo banner
+  // demo banner: built once and updated in place, so the Stop button stays the same element while it's tapped
+  const bTitle = h('span', { class: 'title' });
+  const bStatus = h('span', { class: 'status' });
+  banner.append(bTitle, bStatus, h('button', { class: 'btn small', onclick: () => app.stopDemo() }, icon('close'), 'Stop'));
   const renderDemo = (st) => {
     if (!st) {
       banner.style.display = 'none';
@@ -113,11 +116,9 @@ export function home(root) {
     }
     banner.style.display = '';
     const elapsed = (performance.now() - st.started) / 1000;
-    banner.replaceChildren(
-      h('span', { class: 'title' }, st.title),
-      h('span', { class: 'status' }, st.text || `${Math.max(0, Math.ceil(st.duration - elapsed))} s`),
-      h('button', { class: 'btn small', onclick: () => app.stopDemo() }, icon('close'), 'Stop'),
-    );
+    const text = st.text || `${Math.max(0, Math.ceil(st.duration - elapsed))} s`;
+    if (bTitle.textContent !== st.title) bTitle.textContent = st.title;
+    if (bStatus.textContent !== text) bStatus.textContent = text;
   };
   unsubs.push(app.on('demo', renderDemo));
   renderDemo(app.demo && app.demo.status);
@@ -148,6 +149,7 @@ export function home(root) {
       for (const u of unsubs) u();
       app.hover = null;
       if (app.experience && app.experience.kind === 'room') app.stopExperience();
+      if (app.demo) app.stopDemo();
     },
     onKey(e) {
       if (app.experience && app.experience.kind === 'room') {

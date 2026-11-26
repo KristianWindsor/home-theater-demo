@@ -341,6 +341,7 @@ class App {
     this.room.goTo(id === 'lfe-sweep' ? 'wide' : 'overview', 1.5);
     const status = { title: def.title, text: '', started: performance.now(), duration: def.duration };
     const emit = (type, d = {}) => {
+      const before = status.text;
       if (type === 'speaker') {
         const sid = this.room.idForRole(d.role);
         if (sid) this.room.setActivity(sid, d.on ? 1 : 0);
@@ -366,7 +367,9 @@ class App {
         this.stopDemo();
         return;
       }
-      this.emit('demo', status);
+      // only when what the banner shows changed: the orbit and the storm emit every frame, and re-rendering the
+      // banner that often swapped its Stop button out from under the user's finger
+      if (status.text !== before) this.emit('demo', status);
     };
     this.demo = { def, ctl: def.run({ engine: this.engine, synth: this.synth, emit, roles, ring }), status };
     this.rig.setMode('ambient');
