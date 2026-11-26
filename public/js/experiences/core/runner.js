@@ -262,6 +262,16 @@ export class ExperienceRunner {
     this.seek(0, true);
   }
 
+  /** Fade the sound out over `seconds` (the showcase ends shows early this way); resolves once it's silent. */
+  fadeOut(seconds = 1.5) {
+    if (!this.bus || !this.ctx) return Promise.resolve();
+    const now = this.ctx.currentTime, g = this.bus.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0, now + seconds);
+    return new Promise((r) => setTimeout(r, seconds * 1000));
+  }
+
   /** Previous (dir -1: the start of this chapter, or the one before when already near it) or next chapter. */
   jumpChapter(dir) {
     const ch = this.chapters;

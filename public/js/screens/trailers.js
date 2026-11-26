@@ -1,4 +1,4 @@
-// Trailers: the Dolby, DTS and THX trailers that play before the film in a cinema. One section per folder
+// Cinema Demos: the Dolby, DTS and THX trailers that play before the film in a cinema. One section per folder
 // (media/trailers/Dolby/Spheres.mp4 goes under Dolby); Play all runs them back to back, like a pre-show reel.
 import { h, icon, fmtTime } from '../core/dom.js';
 import { ctx } from '../core/context.js';
@@ -45,12 +45,13 @@ export function trailers(root) {
   const el = h('div', { class: 'screen scrim' },
     h('div', { class: 'topbar' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),
-      h('h1', {}, 'Trailers'), h('div', { class: 'spacer' }),
+      h('h1', {}, 'Cinema Demos'), h('div', { class: 'spacer' }),
       reel.length > 1
         ? h('button', { class: 'btn btn-primary', onclick: () => app.router.go(`/play/${reel[0].id}?reel=trailers`), 'aria-label': 'Play all' },
           icon('play'), h('span', { class: 'lbl' }, `Play all ${reel.length}`))
         : null),
     h('div', { class: 'scroll' },
+      reel.length ? h('div', { class: 'page-intro' }, 'The Dolby, DTS and THX trailers that play before the film in a cinema, with their lossless soundtracks.') : null,
       reel.length
         ? groups.map((g, gi) => [
           g.name ? h('div', { class: 'section-title' }, g.name) : null,

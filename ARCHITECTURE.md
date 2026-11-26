@@ -165,7 +165,7 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
   absorption, the ground reflection). `audio/cat.js` has the purr (`PurrCore`: glottal pulses ~23/s through
   breathing phases the score schedules, plus a pure sub layer), bell, paws, kneading and the trill;
   `core/cat.js` ray-marches the cat (an SDF posed from JS) into the room with real depth.
-- **Easter eggs.** `hidden: true` in `experiences/index.js` keeps a piece off the Demos page; a scene with an
+- **Easter eggs.** `hidden: true` in `experiences/index.js` keeps a piece off the Original Shows page; a scene with an
   `onClick(x, y)` receives clicks on the picture (The Passenger starts *Purr / Rev* from its sleeping cat).
 - **Lights.** While a piece runs, the light rig is in `script` mode and asks `scene.light(fixture, t)` for each
   fixture's colour (fixtures carry `anchor` and `az`), so a Hue sink gets the cues for free.
@@ -175,8 +175,10 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
 1. Make `public/js/experiences/<id>/` with `score.js` (`compose()` returns `score.done()`), `audio.js`
    (default export `setup(studio, score)`) and `scene.js` (`export class Scene`, with `init`, `update`, `draw`
    or the room hooks, and `light`).
-2. Register it in `experiences/index.js` (short title, one-line tagline, duration, kind) and draw its card
-   icon `xp-<id>` in `core/dom.js`. It appears under *Shows* on the Demos page.
+2. Register it in `experiences/index.js` (short title, one-line tagline, duration, kind) and draw its icon
+   `xp-<id>` in `core/dom.js`. It appears on the Original Shows page; give it a still from the piece as
+   `public/img/shows/<id>.jpg` (960×540; the icon stands in until there is one). Put it in the showcase with a
+   step in `config/showcase.json`.
 3. Iterate on the sound with `node scripts/render_experience.mjs <id>` (6-channel WAV; renders ~10× real time),
    and on the picture by typing `kw51.experience.peek = 42` in the browser console to hold the visuals at
    any moment (`null` resumes).

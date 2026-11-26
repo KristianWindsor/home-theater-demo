@@ -46,7 +46,7 @@ export function createFrame() {
 }
 
 const SCORE_FORMAT = 'kw51-score'; // what analyzer/kw51_analysis writes
-const LEGACY_SCORE_FORMAT = 'marquee-score'; // scores written before the app was renamed KW 5.1
+const LEGACY_SCORE_FORMAT = 'marquee-score'; // scores written before the app was renamed KW5.1
 
 export class Score {
   constructor(json) {

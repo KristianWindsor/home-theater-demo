@@ -1,4 +1,4 @@
-// KW 5.1 front end: boots the renderer, audio, library and screens; runs the frame loop.
+// KW5.1 front end: boots the renderer, audio, library and screens; runs the frame loop.
 import { createContext, Target } from './gl/gl.js';
 import { Room } from './room/room.js';
 import { Visualizer } from './viz/visualizer.js';
@@ -13,6 +13,7 @@ import { settings, onSetting } from './core/settings.js';
 import { Router } from './core/router.js';
 import { installNav } from './core/nav.js';
 import { installNowPlaying } from './core/nowplaying.js';
+import { Showcase } from './core/showcase.js';
 import { toast, TOUCH_ONLY } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
@@ -82,6 +83,7 @@ class App {
     perfOverlay(this);
     this.router = new Router(document.getElementById('ui'), screens);
     installNowPlaying(this);
+    this.showcase = new Showcase(this);
     events({
       analysis: (d) => {
         const item = this.items.get(d.id);
@@ -369,8 +371,9 @@ class App {
   /** Something in the room was clicked (or chosen with the keyboard). */
   async activate(id) {
     if (id === 'tv') {
+      // the TV is the way in: it plays the showcase
       this.room.goTo('tv', 1.1);
-      setTimeout(() => this.router.go('/movies'), 650);
+      setTimeout(() => this.playShowcase(), 650);
       return;
     }
     if (id === 'couch') {
@@ -446,7 +449,7 @@ class App {
       if (status.text !== before) this.emit('demo', status);
     };
     const engine = def.show ? this.engine.onBus('show') : this.engine; // shows play at the Shows level
-    // where it was started (the Demos page): it goes back there when it ends, onto the same tile
+    // where it was started (Original Shows): it goes back there when it ends, onto the same tile
     const here = this.router.current;
     const from = here && here.name !== 'home' ? here.path : prevFrom;
     this.demo = { def, ctl: def.run({ engine, synth: this.synth, emit, roles, ring }), status, from };
@@ -461,6 +464,17 @@ class App {
     if (!d) return;
     this.stopDemo();
     if (d.from && this.router.current && this.router.current.name === 'home') this.router.back(d.from);
+  }
+
+  // ---------------------------------------------------------------- the showcase
+  /** Play the showcase (core/showcase.js): a few minutes of everything, from config/showcase.json. */
+  async playShowcase() {
+    if (!this.engine.ready) await this.enter();
+    if (!this.engine.ready) return;
+    this.stopDemo();
+    this.stopExperience();
+    if (this.music.playing) this.music.pause();
+    this.showcase.start();
   }
 
   // ---------------------------------------------------------------- experiences
@@ -480,7 +494,7 @@ class App {
     this.rig.script = (f) => run.light(f);
     this.rig.setMode('script');
     run.on('end', () => {
-      if (this.experience !== run) return;
+      if (this.experience !== run || run.showcase) return; // in the showcase, the showcase moves on
       if (run.kind === 'room') this.finishExperience();
     });
     run.on('state', (st) => {
@@ -501,10 +515,14 @@ class App {
     return run;
   }
 
-  /** A room show ended, or Stop was pressed: back to where it was started (the Demos page, its tile focused). */
+  /** A room show ended, or Stop was pressed: back to where it was started (Original Shows, its tile focused). */
   finishExperience() {
     const run = this.experience;
     if (!run) return;
+    if (run.showcase && this.showcase.active) {
+      this.showcase.stop(); // Stop during the showcase ends the showcase
+      return;
+    }
     this.stopExperience();
     if (run.kind === 'room' && run.from && this.router.current && this.router.current.name === 'home') this.router.back(run.from);
   }
@@ -528,7 +546,7 @@ class App {
     }
     this.demo = null;
     this.room.setOrb(null);
-    this.room.setCard('KW 5.1', 'Home Theater');
+    this.room.setIdleCard();
     for (const id in this.room.speakers) this.room.setActivity(id, 0);
     this.emit('demo', null);
   }

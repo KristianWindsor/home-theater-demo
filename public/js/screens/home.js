@@ -1,10 +1,13 @@
-// Home: the 3D theater. Click speakers to hear them alone, the TV for movies, the couch to sit. Room shows play
-// here, with their transport in a pill at the top; the music's transport is the Now Playing bar (core/nowplaying.js).
+// Home: the 3D theater. One way in, under the TV (and the TV itself): Play the showcase. Everything else is a
+// smaller row below; Settings is the gear in the corner, beside what the speakers are getting. Click speakers to
+// hear them alone, the couch to sit. Room shows play here, with their transport in a pill at the top; the music's
+// transport is the Now Playing bar (core/nowplaying.js).
 import { h, icon, TOUCH_ONLY } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
 import { settings } from '../core/settings.js';
 import { showTransport, showKey } from './transport.js';
+import { showcaseProgram, aboutLength } from '../core/showcase.js';
 
 export function home(root) {
   const app = ctx.app;
@@ -14,23 +17,42 @@ export function home(root) {
   const tag = h('div', { class: 'room-tag', style: { opacity: 0 } });
   const banner = h('div', { class: 'demo-banner', style: { display: 'none' } });
   const go = (path) => () => app.router.go(path);
-  const dockItem = (path, ic, label, auto) => h('button', { class: 'dock-item', onclick: go(path), 'data-autofocus': auto || null, 'data-key': `dock:${path}` },
-    icon(ic), h('span', {}, label));
-  const dock = h('div', { class: 'dock' },
-    dockItem('/demos', 'surround', 'Demos', true),
-    dockItem('/trailers', 'ticket', 'Trailers'),
-    dockItem('/movies', 'film', 'Movies'),
+  // the way in: the showcase, just under the TV (placeCta keeps it there as the room turns)
+  const prog = showcaseProgram(app);
+  const cta = h('div', { class: 'showcase-cta' },
+    h('button', { class: 'btn btn-primary btn-xl', onclick: () => app.playShowcase(), 'data-autofocus': true, 'data-key': 'home:showcase' }, icon('play'), prog.title),
+    h('div', { class: 'cta-line' }, `${aboutLength(prog.length)} · ${prog.line}`));
+  // everything else, smaller
+  const dockItem = (path, ic, label) => h('button', { class: 'dock-item', onclick: go(path), 'data-key': `dock:${path}` }, icon(ic), h('span', {}, label));
+  const dock = h('nav', { class: 'dock', 'aria-label': 'Explore' },
+    dockItem('/demos', 'surround', 'Original Shows'),
+    dockItem('/trailers', 'ticket', 'Cinema Demos'),
+    dockItem('/movies', 'film', 'Movie Scenes'),
     dockItem('/music', 'music', 'Music'),
-    dockItem('/settings', 'settings', 'Settings'),
   );
+  // top right: what the speakers are getting (and the way to set them up), and Settings
+  const outChip = h('button', { class: 'out-chip', onclick: go('/settings?panel=speakers'), 'data-key': 'home:output', title: 'Speaker setup' });
+  const drawOut = () => {
+    const eng = app.engine;
+    // a phone or tablet can't be set up for 5.1, so it isn't asked to
+    const ok = eng.ready && (eng.channels >= 6 || TOUCH_ONLY);
+    const text = !eng.ready ? 'Sound off' : ok ? `${eng.layoutName} output` : `${eng.layoutName} · set up 5.1`;
+    outChip.classList.toggle('warn', !ok);
+    outChip.setAttribute('aria-label', `${text} · speaker setup`);
+    outChip.replaceChildren(icon('surround'), h('span', {}, text));
+  };
+  drawOut();
+  const corner = h('div', { class: 'home-corner' }, outChip,
+    h('button', { class: 'btn btn-icon gear', onclick: go('/settings'), 'aria-label': 'Settings', 'data-key': 'dock:/settings' }, icon('settings')));
   const xpPill = h('div', { class: 'xp-pill' });
   const el = h('div', { class: 'screen home' },
-    h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'KW 5.1'),
-      h('div', { class: 'room-name' }, (app.library.room && app.library.room.name) || 'Home Theater')),
+    h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'KW5.1'),
+      h('div', { class: 'room-name' }, 'A Windsor home theater showcase')),
+    corner,
     h('div', { class: 'room-hint' }, TOUCH_ONLY
       ? ['Tap a speaker to hear it alone', h('br'), 'Drag to look around · tap the couch to sit']
       : ['Click a speaker to hear it alone', h('br'), 'Drag to look around · click the couch to sit']),
-    tag, banner, dock, xpPill,
+    tag, banner, cta, dock, xpPill,
   );
   root.appendChild(el);
   focusFirst(el);
@@ -44,10 +66,11 @@ export function home(root) {
   const immersive = (on) => {
     el.classList.toggle('immersive', on);
     dock.inert = on; // hidden, so out of reach of the arrow keys too
+    corner.inert = on;
   };
   const showPill = () => {
     const run = app.experience;
-    if (!run || run.kind !== 'room') return;
+    if (!run || run.kind !== 'room' || app.showcase.active) return; // in the showcase its own chip does this
     xpPill.classList.add('on');
     clearTimeout(pillTimer);
     const hide = () => {
@@ -88,6 +111,10 @@ export function home(root) {
   };
   unsubs.push(app.on('experience', bindXp));
   bindXp(app.experience);
+  // the showcase button steps aside while something plays in the room
+  const drawCta = () => cta.classList.toggle('hidden', !!(app.experience || app.demo || app.showcase.active || app.showcase.cardOpen));
+  drawCta();
+  for (const ev of ['experience', 'demo', 'showcase']) unsubs.push(app.on(ev, drawCta));
   for (const ev of ['pointermove', 'pointerdown']) document.addEventListener(ev, showPill, true);
   unsubs.push(() => {
     for (const u of xpUnsub) u();
@@ -108,7 +135,7 @@ export function home(root) {
   const labelFor = (p) => {
     const sp = app.room.speakers[p.id];
     if (sp) return [sp.label, sp.detail || sp.role];
-    if (p.id === 'tv') return [p.label || 'TV', 'Movies'];
+    if (p.id === 'tv') return [p.label || 'TV', 'Play the showcase'];
     if (p.id === 'couch') return ['Couch', app.room.preset === 'couch' ? 'Stand up' : 'Sit down'];
     return [p.label || p.id, ''];
   };
@@ -124,6 +151,23 @@ export function home(root) {
     tagText = [e.label, e.detail];
     tagUntil = performance.now() + 2600;
   }));
+  // the showcase button sits just under the TV, following it as the room turns (above the dock if the TV is out of view)
+  const placeCta = (room) => {
+    if (cta.classList.contains('hidden')) return;
+    const W = window.innerWidth, H = window.innerHeight;
+    const tv = room.tv;
+    const p = room.project([0, tv.y - tv.h / 2, tv.z + 0.1], W, H);
+    const w = cta.offsetWidth, ht = cta.offsetHeight;
+    const dockTop = dock.getBoundingClientRect().top;
+    let x = p.x, y = p.y + 16;
+    if (!p.visible || y < 90 || y + ht > dockTop - 12) {
+      x = W / 2;
+      y = Math.max(90, dockTop - ht - 28);
+    }
+    x = Math.max(w / 2 + 16, Math.min(W - w / 2 - 16, x));
+    cta.style.transform = `translate(${Math.round(x - w / 2)}px, ${Math.round(y)}px)`;
+  };
+  unsubs.push(app.on('roomframe', placeCta));
   unsubs.push(app.on('roomframe', (room) => {
     if (!tagFor || performance.now() > tagUntil || !settings.roomLabels) {
       tag.style.opacity = 0;

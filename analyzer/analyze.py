@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KW 5.1 analyzer: audio file -> choreography score JSON for the visualizer.
+KW5.1 analyzer: audio file -> choreography score JSON for the visualizer.
 
     python3 analyzer/analyze.py song.flac -o song.score.json
     python3 analyzer/analyze.py media/music --out-dir data/scores     # whole folder (by file name)

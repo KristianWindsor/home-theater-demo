@@ -1,0 +1,21 @@
+{
+  "_comment": "Play the showcase (the home screen, or click the TV): a few minutes of everything, in order. A step is a show (\"show\": its id, playing \"from\"/\"to\" seconds), a stretch of a film or a cinema demo (\"movie\" / \"trailer\": the file, \"start\"/\"end\"; no end plays to the end), or a stretch of a song (\"song\": the file, \"start\"/\"end\"), in the visualizer or, with \"video\": true, its music video. \"or\" lists stand-ins for a step whose file isn't in the library; a step with nothing available is skipped. \"title\" and \"line\" are its caption. The finale card closes it.",
+  "title": "Play the showcase",
+  "line": "A little of everything",
+  "steps": [
+    { "show": "room-wakes-up", "to": 44, "title": "Awakening", "line": "The room wakes up · a KW5.1 Original" },
+    { "trailer": "Dolby/Amaze.mp4", "title": "Dolby Atmos: Amaze", "line": "The trailer before the film" },
+    { "movie": "The Dark Knight (2008).mp4", "start": "1:20:06", "end": "1:21:46", "title": "The Dark Knight", "line": "The Batpod, and the truck",
+      "or": [
+        { "show": "cold-start", "from": 0, "to": 75, "title": "Cold Start", "line": "A V10 wakes up · a KW5.1 Original" }
+      ] },
+    { "movie": "Star Wars Episode II - Attack of the Clones (2002).mp4", "start": "1:06:46.2", "end": "1:08:00.9", "title": "Star Wars: Episode II", "line": "The asteroid field and the seismic charges" },
+    { "song": "Animal Collective/My Girls.flac", "start": 177.5, "end": 223.4, "video": true, "title": "My Girls", "line": "Animal Collective · the music video",
+      "or": [
+        { "show": "glass-orchard", "from": 0, "to": 70, "title": "Glass Orchard", "line": "A glass tree, grown note by note · a KW5.1 Original" }
+      ] },
+    { "song": "Mannheim_Steamroller_-_A_Fresh_Aire_Christmas_-_10_-_Carol_Of_The_Bells.flac", "start": 128, "end": 180, "title": "Carol of the Bells", "line": "Mannheim Steamroller · choreographed by the visualizer" },
+    { "show": "the-passenger", "to": 62, "title": "The Passenger", "line": "A cat takes the empty seat · a KW5.1 Original" }
+  ],
+  "finale": { "title": "KW5.1", "line": "A Windsor home theater showcase", "thanks": "Thanks for watching" }
+}

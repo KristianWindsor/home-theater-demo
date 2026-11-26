@@ -1,5 +1,5 @@
 'use strict';
-// KW 5.1 server: static app + media library API. Zero npm dependencies (Node >= 18).
+// KW5.1 server: static app + media library API. Zero npm dependencies (Node >= 18).
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -130,6 +130,7 @@ async function api(req, res, url) {
     return sendJSON(req, res, 200, {
       items: items.map(publicItem),
       room: library.loadRoom(),
+      showcase: library.loadShowcase(),
       sounds: library.speakerSounds(),
       server: { version: VERSION, sceneEdits: config.allowSceneEdits, analysis: analysis.stats() },
     });
@@ -247,7 +248,7 @@ function start() {
   server.keepAliveTimeout = 65000;
   server.requestTimeout = 0; // long media streams
   server.listen(config.port, config.host, () => {
-    console.log(`[server] KW 5.1 v${VERSION} listening on http://${config.host}:${config.port}`);
+    console.log(`[server] KW5.1 v${VERSION} listening on http://${config.host}:${config.port}`);
     console.log(`[server] media: ${config.mediaDir}  data: ${config.dataDir}  config: ${config.configDir}`);
   });
   library.scan().then((items) => {

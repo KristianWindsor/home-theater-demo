@@ -1,18 +1,23 @@
-# KW 5.1
+# KW5.1
 
-A home-theater showcase that runs in a browser on the machine connected to the TV/receiver:
+*A Windsor home theater showcase.* It runs in a browser on the machine connected to the TV/receiver:
 
 - **3D home screen**: a model of the room (couch, four towers, center, the subwoofer, the TV, the Hue
-  lights). Click a speaker and a sound plays from **only that speaker**; click the sub for a sub drop; click
-  the TV for movies; click the couch to sit down. Speakers move and lights glow with the actual output levels.
-- **Demos**: *Shows* (seven composed surround experiences where the music, where each sound sits in the room,
-  the picture and the lights all come from one score, plus a helicopter orbiting the couch and a thunderstorm
-  with lightning in the lights), *Setup* (channel check, a 120→18 Hz sub sweep) and your own demo clips.
-  The shows have a real transport: pause, restart, previous/next chapter, and a timeline you can click or drag
-  along ("wait, play that part again"). See [Experiences](#experiences).
-- **Trailers**: the Dolby, DTS and THX trailers that play before a film in the cinema, one section per brand.
-  *Play all* runs them back to back.
-- **Movies**: MKV/MP4 library with **curated scene lists** you jump straight to, one row of scenes per film,
+  lights), with one way in: **Play the showcase** under the TV (or click the TV). Click a speaker and a sound
+  plays from **only that speaker**; click the sub for a sub drop; click the couch to sit down. Speakers move and
+  lights glow with the actual output levels. The rest is a smaller row below, Settings is the gear in the corner,
+  beside a chip that says what the speakers are getting (and leads to speaker setup).
+- **The showcase**: about seven minutes of everything, in order (`config/showcase.json`): a show in the room,
+  a cinema trailer, two stretches of films, a music video, a song in the visualizer, another show, then a closing
+  card. See [The showcase](#the-showcase).
+- **Original Shows**: seven composed surround experiences, each a *KW5.1 Original*, where the music, where each
+  sound sits in the room, the picture and the lights all come from one score, plus a helicopter orbiting the
+  couch and a thunderstorm with lightning in the lights. Each card has a still from the show. The shows have a
+  real transport: pause, restart, previous/next chapter, and a timeline you can click or drag along ("wait, play
+  that part again"). See [Experiences](#experiences).
+- **Cinema Demos**: the Dolby, DTS and THX trailers that play before a film in the cinema, one section per
+  brand. *Play all* runs them back to back.
+- **Movie Scenes**: MKV/MP4 library with **curated scene lists** you jump straight to, one row of scenes per film,
   scene fades. A long scene can have a **highlight**, a 2–3 minute cut its tile plays first (the podrace start
   rather than all 15 minutes), with the **full sequence** a button away. The player's timeline spans the clip
   playing, so it's easy to scrub; **T** switches it to the whole film. Mark scenes while watching with **B**
@@ -133,7 +138,7 @@ Scenes live in `config/catalog.json`, keyed by file name:
   (the name is pre-filled) and **E** where it ends. That's the quickest way to build a scene list.
 - Scenes edited in the app (B/E in the player, or *Edit scenes* on a movie page) are saved on the server in
   `DATA_DIR/scenes.json` and override the catalog. *Revert to catalog* undoes that.
-- The Movies page has a row of scenes per film; starred scenes (`"star": true`, or the star in *Edit scenes*)
+- Movie Scenes has a row of scenes per film; starred scenes (`"star": true`, or the star in *Edit scenes*)
   are the highlights of each row. Click one to play just that scene. A movie's page lists all of its scenes
   and has *Play all* to run them back to back.
 - A long scene can carry a `"highlight"`, a short cut inside it:
@@ -146,9 +151,24 @@ Scenes live in `config/catalog.json`, keyed by file name:
 The shipped catalog has a frame-checked scene list for The Dark Knight, keyed `The Dark Knight (2008).mp4`:
 name your copy to match. If its studio logos run longer or shorter, shift the times (or fix them with B/E).
 
+## The showcase
+
+*Play the showcase* (or a click on the TV) plays `config/showcase.json`: a short evening in the theater with a
+beginning and an end. Out of the box: *Awakening* (one tick, then the whole room joins in), Dolby's *Amaze*
+trailer, the Batpod and the truck flip from The Dark Knight, the seismic charges in the asteroid field from
+Attack of the Clones, the break and drop of Animal Collective's *My Girls* with its music video, the drop in
+Mannheim Steamroller's *Carol of the Bells* in the visualizer, *The Passenger* (a cat takes the empty seat), then
+a closing card. The film and song stretches are a minute or so each. A chip at the top shows where it is, with
+*Next* and *End*; going anywhere else ends it.
+
+Each step is a show (`"show": id` with `"from"`/`"to"` seconds), a stretch of a film or a cinema demo
+(`"movie"` / `"trailer"`: the file, `"start"`/`"end"`; no end plays to the end), or a stretch of a song (`"song"`:
+the file, `"start"`/`"end"`) in the visualizer, or with `"video": true` its music video. `"or"` lists stand-ins for when a file isn't in the library (a fresh install plays the
+shows instead). The home screen's *7 minutes · A little of everything* comes from the steps and `"line"`.
+
 ## Experiences
 
-**Demos → Shows.** Each piece is one score that drives the music, the position of every sound in the
+**Original Shows.** Each piece is one score that drives the music, the position of every sound in the
 room, the picture and the Hue lights, so they can't drift apart.
 
 | | |
@@ -302,7 +322,8 @@ it), and which Hue light sits behind what. Edit it to match the real room; the s
 | Everywhere | Arrows move between buttons, Enter selects, Esc/Backspace goes back |
 | Player | Space/K play-pause · ←/→ ±10 s (Shift ±60) · N/P next/previous scene · T timeline: this clip / whole film · B mark scene start · E mark scene end · F fullscreen · +/− volume |
 | Visualizer | see above |
-| Home | 1–6 speakers · C couch |
+| Home | Enter plays the showcase (it has focus) · 1–6 speakers · C couch |
+| Showcase | Next / End in the chip at the top (arrow keys reach it) · Esc or Back ends it |
 | Shows | Space/K pause · ←/→ previous/next chapter (← once: back to this chapter's start) · J/L ±10 s · R from the start · Esc stops · any key or the mouse shows the controls |
 
 ## Configuration

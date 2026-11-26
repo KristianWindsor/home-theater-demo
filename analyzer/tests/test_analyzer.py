@@ -54,7 +54,7 @@ def main():
         if not ok:
             failures.append(name)
 
-    print("KW 5.1 analyzer accuracy report")
+    print("KW5.1 analyzer accuracy report")
     err = abs(g["bpm"] - truth["bpm"]) / truth["bpm"]
     check("tempo", err < 0.01, f"{g['bpm']} BPM vs {truth['bpm']} ({err * 100:.2f}% off)")
 

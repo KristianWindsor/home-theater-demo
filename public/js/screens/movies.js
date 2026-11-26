@@ -1,4 +1,4 @@
-// Movies (one row of scenes per film), movie detail (scenes, chapters, compatibility) and the scene editor.
+// Movie Scenes (one row of scenes per film), movie detail (scenes, chapters, compatibility) and the scene editor.
 import { h, icon, fmtTime, fmtTimePrecise, parseTime, fmtBytes, toast } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
@@ -123,7 +123,7 @@ export function movies(root) {
   const vids = app.library.items.filter((i) => i.category === 'movies');
   const observers = [];
   const el = h('div', { class: 'screen scrim' },
-    topbar('Movies'),
+    topbar('Movie Scenes'),
     h('div', { class: 'scroll' },
       vids.length
         ? vids.map((v, i) => shelf(v, { autofocus: i === 0, observers }))
@@ -161,7 +161,7 @@ export function movie(root, id) {
     const playable = scenes.filter((s) => s.start !== null);
     const v = p.video;
     el.replaceChildren(
-      topbar({ demos: 'Demo', trailers: 'Trailer' }[item.category] || 'Movie'),
+      topbar({ demos: 'Demo', trailers: 'Cinema demo' }[item.category] || 'Movie'),
       h('div', { class: 'scroll' },
         h('div', { class: 'hero' },
           h('div', { class: 'hero-bg', style: { backgroundImage: `url("${api.thumb(item.id, item.duration * 0.3, 1280)}")` } }),

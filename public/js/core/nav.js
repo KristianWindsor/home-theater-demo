@@ -10,9 +10,9 @@ function visible(el) {
   return st.visibility !== 'hidden' && st.display !== 'none' && el.closest('[inert]') === null;
 }
 
-/** Focusable elements in root; by default the screen and the Now Playing bar that sits beside it. */
+/** Focusable elements in root; by default the screen and what sits beside it (Now Playing, the showcase chip and card). */
 export function focusables(root = null) {
-  const roots = root ? [root] : [document.getElementById('ui'), document.getElementById('np')].filter(Boolean);
+  const roots = root ? [root] : ['ui', 'np', 'showcase', 'showcase-card'].map((id) => document.getElementById(id)).filter(Boolean);
   return roots.flatMap((r) => [...r.querySelectorAll(FOCUSABLE)]).filter(visible);
 }
 

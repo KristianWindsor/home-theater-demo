@@ -1,4 +1,6 @@
-// Demos: shows (composed experiences and short built-in pieces), setup tools, and your own demo clips.
+// Original Shows: the composed experiences and the short built-in pieces, each card with a still from the piece itself
+// (public/img/shows/<id>.jpg), then your own demo clips. Speaker setup (Channel Check, the Subwoofer Sweep) is in
+// Settings.
 import { h, icon, fmtTime } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
@@ -6,16 +8,21 @@ import { BUILTIN_DEMOS } from '../audio/demos.js';
 import { EXPERIENCES } from '../experiences/index.js';
 import { videoCard } from './movies.js';
 
-// One card for everything you can start here: icon, name, one line, then length and where it plays.
-function demoCard({ id, icon: ic, title, line, duration, where, run }, first) {
-  return h('button', { class: 'card demo-card', onclick: run, 'data-autofocus': first || null, 'data-key': `show:${id}` },
-    h('div', { class: 'ico' }, icon(ic)),
-    h('div', { class: 'title' }, title),
-    h('div', { class: 'line' }, line),
-    h('div', { class: 'meta' }, h('span', {}, fmtTime(duration)), h('span', { class: 'dot' }, '·'), h('span', {}, where)));
-}
+const ICONS = { orbit: 'orbit', storm: 'storm' };
 
-const ICONS = { 'channel-check': 'surround', orbit: 'orbit', storm: 'storm', 'lfe-sweep': 'sub' };
+/** A show as a card: its still, how long it runs, then name, one line, and where it plays. */
+function showCard({ id, ic, title, line, duration, where, run }, first) {
+  const fallback = () => h('div', { class: 'still-fallback' }, icon(ic));
+  return h('button', { class: 'card show-card', onclick: run, 'data-autofocus': first || null, 'data-key': `show:${id}` },
+    h('div', { class: 'thumb' },
+      h('img', { src: `/img/shows/${id}.jpg`, alt: '', loading: 'lazy', onerror: (e) => e.target.replaceWith(fallback()) }),
+      h('span', { class: 'badge time' }, fmtTime(duration))),
+    h('div', { class: 'body' },
+      h('div', { class: 'orig' }, 'KW5.1 Original'),
+      h('div', { class: 'title' }, title),
+      h('div', { class: 'line' }, line),
+      h('div', { class: 'meta' }, where)));
+}
 
 const section = (title, sub) => h('div', { class: 'section-head' }, h('div', { class: 'section-title' }, title), sub ? h('div', { class: 'section-sub' }, sub) : null);
 
@@ -26,22 +33,21 @@ export function demos(root) {
   const files = app.library.items.filter((i) => i.category === 'demos');
   const vids = files.filter((i) => i.kind === 'video');
   const auds = files.filter((i) => i.kind === 'audio');
-  const builtin = (d) => ({ id: d.id, icon: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration, where: 'In the room', run: () => app.runDemo(d.id) });
   const shows = [
-    ...EXPERIENCES.filter((x) => !x.hidden).map((x) => ({ id: x.id, icon: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration, where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
-    ...BUILTIN_DEMOS.filter((d) => d.show).map(builtin), // short built-in pieces sit with the shows
+    ...EXPERIENCES.filter((x) => !x.hidden).map((x) => ({ id: x.id, ic: `xp-${x.id}`, title: x.title, line: x.tagline, duration: x.duration,
+      where: x.kind === 'room' ? 'In the room' : 'Full screen', run: () => app.runExperience(x.id) })),
+    // the short built-in pieces sit with the shows
+    ...BUILTIN_DEMOS.filter((d) => d.show).map((d) => ({ id: d.id, ic: ICONS[d.id] || 'bolt', title: d.title, line: d.blurb, duration: d.duration,
+      where: 'In the room', run: () => app.runDemo(d.id) })),
   ];
-  const setup = BUILTIN_DEMOS.filter((d) => !d.show).map(builtin);
   const el = h('div', { class: 'screen scrim' },
     h('div', { class: 'topbar' },
       h('button', { class: 'btn btn-icon', onclick: () => app.router.back(), 'aria-label': 'Back' }, icon('back')),
-      h('h1', {}, 'Demos'), h('div', { class: 'spacer' })),
+      h('h1', {}, 'Original Shows'), h('div', { class: 'spacer' })),
     h('div', { class: 'scroll' },
-      section('Shows', 'Sound, picture and lights, composed for this room'),
-      h('div', { class: 'demo-grid' }, shows.map((d, i) => demoCard(d, i === 0))),
-      section('Setup', 'Check each speaker and the subwoofer'),
-      h('div', { class: 'demo-grid' }, setup.map((d) => demoCard(d))),
-      // your own clips from media/demos (the Dolby/DTS/THX trailers have their own page)
+      h('div', { class: 'page-intro' }, 'Sound, picture and lights, composed for this room.'),
+      h('div', { class: 'show-grid' }, shows.map((d, i) => showCard(d, i === 0))),
+      // your own clips from media/demos (the Dolby/DTS/THX trailers are the Cinema Demos)
       vids.length ? [
         section('Your clips'),
         h('div', { class: 'demo-grid' }, vids.map((v) => videoCard(v, () => app.router.go(v.scenes && v.scenes.length ? `/movie/${v.id}` : `/play/${v.id}?t=0`)))),

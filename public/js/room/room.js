@@ -356,7 +356,7 @@ export class Room {
     this.ambient = 1;          // scales the room's own (non-Hue) lights
     this.walls = {};
     this.build(config);
-    this.setCard('KW 5.1', 'Home Theater');
+    this.setIdleCard();
   }
 
   mesh(key, fn) {
@@ -565,8 +565,13 @@ export class Room {
     this.picks.push({ id: 'couch', label: 'Couch', center: [0, 0.5, z], rotY: 0, half: [total / 2, 0.55, 0.5] });
   }
 
-  /** Draw a title card for the TV (idle screen, demo names). */
-  setCard(title, subtitle = '') {
+  /** The TV when nothing plays: the wordmark and the way in (clicking the TV plays the showcase). */
+  setIdleCard() {
+    this.setCard('KW5.1', 'Play the showcase', { cta: true });
+  }
+
+  /** Draw a title card for the TV (idle screen, demo names). cta: the subtitle as a gold play button. */
+  setCard(title, subtitle = '', { cta = false } = {}) {
     const c = document.createElement('canvas');
     c.width = 1024;
     c.height = 576;
@@ -586,7 +591,23 @@ export class Room {
     g.fillStyle = 'rgba(160, 185, 230, 0.55)';
     g.fillRect(452, 330, 120, 2);
     g.font = '400 30px "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif';
-    g.fillText(subtitle.toUpperCase(), 512, 380);
+    if (cta) {
+      // a gold play triangle before the words, centred together
+      const text = subtitle.toUpperCase().split('').join(String.fromCharCode(8202));
+      const w = g.measureText(text).width;
+      const x0 = 512 - (w + 44) / 2;
+      g.fillStyle = '#f5b84a';
+      g.beginPath();
+      g.moveTo(x0, 366);
+      g.lineTo(x0 + 24, 380);
+      g.lineTo(x0, 394);
+      g.closePath();
+      g.fill();
+      g.textAlign = 'left';
+      g.fillText(text, x0 + 44, 382);
+    } else {
+      g.fillText(subtitle.toUpperCase(), 512, 380);
+    }
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.cardTex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);

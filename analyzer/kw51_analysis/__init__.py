@@ -1,4 +1,4 @@
-"""KW 5.1 music analysis: turns an audio file into a choreography "score" for the visualizer.
+"""KW5.1 music analysis: turns an audio file into a choreography "score" for the visualizer.
 
 Only numpy + scipy + an ffmpeg binary are required.
 """

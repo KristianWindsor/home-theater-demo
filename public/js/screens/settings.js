@@ -29,15 +29,15 @@ function slider(key, min, max, step, fmt, onChange) {
 
 const row = (label, help, ...ctl) => h('div', { class: 'row' }, h('div', { class: 'label' }, label, help ? h('small', {}, help) : null), ...ctl);
 
-export function settingsScreen(root) {
+export function settingsScreen(root, arg, query) {
   const app = ctx.app;
   app.setMode('room');
   const eng = app.engine;
   const speakers = Object.values(app.room.speakers);
   let sync = null;
 
-  const audioPanel = h('div', { class: 'panel' },
-    h('h3', {}, 'Speakers'),
+  const audioPanel = h('div', { class: 'panel', id: 'speakers' },
+    h('h3', {}, 'Speakers & setup'),
     row('Output', eng.ready ? `${eng.channels} channels reported by the browser` : 'Starts after the first click',
       h('span', { class: `badge ${eng.ready && eng.channels >= 6 ? 'ok' : 'warn'}` }, eng.ready ? eng.layoutName : 'not started')),
     eng.ready && eng.channels < 6 && !TOUCH_ONLY ? h('div', { class: 'help' }, 'Per-speaker sounds need the OS playback device set to 5.1 (Windows: Sound settings → the HDMI/receiver device → Configure → 5.1). Reload the page afterwards. Movies are unaffected: they always play their own channels.') : null,
@@ -46,7 +46,11 @@ export function settingsScreen(root) {
       app.synth.play(s.role, s.role === 'LFE' ? 'lfeRumble' : 'pinkBurst', { dur: 1.5 });
       app.room.setActivity(s.id, 1);
     } }, `${s.label}`))),
-    h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => app.runDemo('channel-check') }, icon('surround'), 'Run channel check in the room')),
+    // speaker setup lives here: both run in the room and come back to this page
+    h('div', { class: 'row' },
+      h('button', { class: 'btn', onclick: () => app.runDemo('channel-check'), 'data-key': 'setup:channel-check' }, icon('surround'), 'Channel check'),
+      h('button', { class: 'btn', onclick: () => app.runDemo('lfe-sweep'), 'data-key': 'setup:lfe-sweep' }, icon('sub'), 'Subwoofer sweep')),
+    h('div', { class: 'help' }, 'Channel check: pink noise in each speaker in turn, named on screen. Subwoofer sweep: a slow 120 → 18 Hz tone, for finding where the sub fades out and what rattles.'),
     row('Volume', 'Master level for music, shows and tests', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     row('Shows level', 'The experiences, Orbit and Thunderstorm. 100% plays them as composed', ...slider('showLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     row('Speaker clicks & tests', 'Tapping speakers in the room, Channel Check, Subwoofer Sweep and these test buttons', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
@@ -160,6 +164,12 @@ export function settingsScreen(root) {
     h('div', { class: 'scroll' }, h('div', { class: 'settings' }, audioPanel, syncPanel, visualPanel, playbackPanel, libPanel, capsPanel)));
   root.appendChild(el);
   focusFirst(el);
+  // from the home screen's output chip: straight to speaker setup
+  if (query && query.get('panel') === 'speakers') {
+    const first = audioPanel.querySelector('.speaker-grid .btn');
+    audioPanel.scrollIntoView({ block: 'start' });
+    if (first) first.focus({ preventScroll: true });
+  }
   return { unmount() { if (sync) sync.stop(); } };
 }
 

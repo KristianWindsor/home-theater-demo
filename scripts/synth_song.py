@@ -315,7 +315,7 @@ def encode(y, output, title, comment):
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "2",
            "-i", "-", "-c:a", "flac", "-sample_fmt", "s16",
            "-metadata", f"title={title}",
-           "-metadata", "artist=KW 5.1 Synth Lab",
+           "-metadata", "artist=KW5.1 Synth Lab",
            "-metadata", "album=Test Signals",
            "-metadata", f"comment={comment}",
            output]

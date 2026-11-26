@@ -20,7 +20,7 @@ export function experience(root, id) {
   const loadBar = h('div', { class: 'xp-load-fill' });
   const loadText = h('div', { class: 'xp-load-text' }, 'Composing');
   const load = h('div', { class: 'xp-load' }, h('div', { class: 'xp-load-track' }, loadBar), loadText);
-  const title = h('div', { class: 'xp-title' }, h('div', { class: 'xp-t1' }, def.title), h('div', { class: 'xp-t2' }, def.tagline), load,
+  const title = h('div', { class: 'xp-title' }, h('div', { class: 'xp-orig' }, 'A KW5.1 Original'), h('div', { class: 'xp-t1' }, def.title), h('div', { class: 'xp-t2' }, def.tagline), load,
     h('div', { class: 'xp-rotate' }, 'Turn your phone sideways for the full picture'));
   const tp = showTransport();
   const map = speakerMap(app);
@@ -97,6 +97,7 @@ export function experience(root, id) {
         endCard.style.display = 'none';
         showUi();
       } else if (st === 'ended') {
+        if (run.showcase) return; // the showcase moves on by itself
         endCard.style.display = '';
         el.classList.remove('idle');
         const b = endCard.querySelector('button');

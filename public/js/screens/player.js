@@ -22,9 +22,9 @@ function buildPlaylist(app, arg, q) {
   const item = app.items.get(arg);
   if (!item) return { list: [] };
   if (q.get('reel') === 'trailers') {
-    // every trailer back to back, from this one on (Play all on the Trailers page)
+    // every trailer back to back, from this one on (Play all on the Cinema Demos page)
     const list = trailerReel(app.library.items).map((v) => ({ item: v, start: 0, end: null, title: v.title }));
-    return { title: 'Trailers', queue: true, reel: 'trailers', list, first: Math.max(0, list.findIndex((e) => e.item.id === item.id)) };
+    return { title: 'Cinema Demos', queue: true, reel: 'trailers', list, first: Math.max(0, list.findIndex((e) => e.item.id === item.id)) };
   }
   const scenes = (item.scenes || []).map((s, i) => ({ ...s, i })).filter((s) => s.start !== null);
   if (q.get('scenes') === 'all') {
@@ -36,7 +36,9 @@ function buildPlaylist(app, arg, q) {
     const s = (item.scenes || [])[i];
     if (s && s.start !== null) return { title: item.title, list: [{ item, ...sceneCut(s, q.get('full') === '1'), title: s.title, scene: i }], sceneNav: true };
   }
-  return { title: item.title, list: [{ item, start: Number(q.get('t')) || 0, end: null, title: null }] };
+  // a stretch of the film: from t, to end when given (the showcase plays one this way)
+  const end = q.get('end') !== null && Number.isFinite(Number(q.get('end'))) ? Number(q.get('end')) : null;
+  return { title: item.title, list: [{ item, start: Number(q.get('t')) || 0, end, title: null }], showcase: q.get('showcase') === '1' };
 }
 
 export function player(root, arg, q) {
@@ -243,7 +245,7 @@ export function player(root, arg, q) {
       titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
       sceneEl.textContent = sceneLine();
     }
-    const fades = settings.sceneFades && (entry.start > 0 || entry.end);
+    const fades = (settings.sceneFades || pl.showcase) && (entry.start > 0 || entry.end);
     fade.style.transition = 'none';
     fade.style.opacity = fades ? 1 : 0;
     const c = checkVideo(entry.item);
@@ -273,9 +275,10 @@ export function player(root, arg, q) {
   async function finishScene() {
     if (ending) return;
     ending = true;
+    const inShowcase = pl.showcase && app.showcase && app.showcase.active;
     const auto = pl.queue || settings.sceneEnd === 'next';
-    if (settings.sceneEnd === 'continue' && !pl.queue) return;
-    if (settings.sceneFades) {
+    if (settings.sceneEnd === 'continue' && !pl.queue && !inShowcase) return;
+    if (settings.sceneFades || inShowcase) {
       // the fade starts FADE_OUT before the endpoint and lands on black exactly at it
       const left = entry.end ? Math.max(0.15, entry.end - video.currentTime) : FADE_OUT;
       fade.style.transition = `opacity ${left}s ease`;
@@ -283,6 +286,7 @@ export function player(root, arg, q) {
       await rampVolume(0, left);
     }
     video.pause();
+    if (inShowcase) return app.showcase.next(); // the showcase moves on to its next step
     if (auto && idx + 1 < pl.list.length) return load(idx + 1);
     if (auto && pl.sceneNav) return jumpScene(1, true);
     endCard.replaceChildren(h('div', { class: 'box' },
@@ -422,7 +426,7 @@ export function player(root, arg, q) {
       }
       if (timeMain.textContent !== text) timeMain.textContent = text;
       if (filmTime.textContent !== film) filmTime.textContent = film;
-      if (entry.end && !ending && t >= entry.end - (settings.sceneFades ? FADE_OUT : 0)) finishScene();
+      if (entry.end && !ending && t >= entry.end - (settings.sceneFades || pl.showcase ? FADE_OUT : 0)) finishScene();
     }
     raf = requestAnimationFrame(tick);
   };

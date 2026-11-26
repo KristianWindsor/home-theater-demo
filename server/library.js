@@ -35,6 +35,11 @@ function loadRoom() {
   return readJSONFile(path.join(config.configDir, 'room.json'), null);
 }
 
+/** The showcase (config/showcase.json): the few minutes "Play the showcase" plays, step by step. */
+function loadShowcase() {
+  return readJSONFile(path.join(config.configDir, 'showcase.json'), null);
+}
+
 function catalogEntry(catalog, category, rel) {
   const table = catalog[category] || {};
   return table[rel] || table[path.basename(rel)] || null;
@@ -326,5 +331,5 @@ function speakerSounds() {
   return out;
 }
 
-module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, onChange, loadRoom, speakerSounds,
+module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, onChange, loadRoom, loadShowcase, speakerSounds,
   CATEGORIES, SOUND_DIR };
