@@ -32,7 +32,8 @@ void main() {
   vec3 pos = vec3(cos(ang) * R, thick, sin(ang) * R);
   float e = specA(clamp(r, 0.0, 0.98));
   float ripR = since * 7.5;
-  float ripple = exp(-pow((R - ripR) * 2.2, 2.0)) * uHasBeat * (0.4 + uBeatPulse);
+  float rr = (R - ripR) * 2.2;
+  float ripple = exp(-rr * rr) * uHasBeat * (0.4 + uBeatPulse);
   float knot = kind >= 0.3 ? pow(vnoise(vec2(arm * 13.0 + r * 28.0, spread * 4.0)), 4.0) * 3.0 : 0.0;
   vec3 c = mix(pal(r * 0.85 + h3 * 0.15 + uTime * 0.01), uChord, 0.35 * uClarity);
   c = mix(c, uC3, kind < 0.12 ? 0.6 : ripple * 0.6);

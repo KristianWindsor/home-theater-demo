@@ -157,7 +157,8 @@ uniform sampler2D uCard;
 uniform float uTime;
 void main() {
   vec3 c = texture(uCard, vUv).rgb;
-  float sweep = exp(-pow((vUv.x - vUv.y * 0.35) - fract(uTime * 0.06) * 1.8 + 0.4, 2.0) * 40.0);
+  float sx = (vUv.x - vUv.y * 0.35) - fract(uTime * 0.06) * 1.8 + 0.4;
+  float sweep = exp(-sx * sx * 40.0);
   c *= 0.85 + 0.15 * sin(uTime * 0.7);
   c += vec3(0.12, 0.16, 0.24) * sweep * 0.5;
   outColor = vec4(c, 1.0);

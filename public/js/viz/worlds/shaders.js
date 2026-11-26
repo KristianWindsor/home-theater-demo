@@ -23,7 +23,7 @@ void main() {
   vec3 col = uC0 * (0.12 + 0.25 * fbm3(p * 3.0 - t));
   col += gas * pow(d, 2.0) * (0.5 + 1.8 * uLoud);
   col += mix(gas, uC3, 0.35) * pow(d, 7.0) * (1.0 + 3.0 * uHigh + 2.5 * uSnare);   // hot cores
-  float fil = pow(1.0 - abs(f - 0.58) * 3.0, 12.0) * step(0.0, 1.0 - abs(f - 0.58) * 3.0);
+  float fil = pow(max(1.0 - abs(f - 0.58) * 3.0, 0.0), 12.0);
   col += gas * 1.5 * fil * (0.2 + 1.2 * uMid + 0.8 * uPerc);                     // filaments
   col *= 0.6 + 0.5 * uBeatPulse * uHasBeat;
   vec2 sp = p * 38.0;
