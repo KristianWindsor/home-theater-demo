@@ -1,6 +1,7 @@
 // Visualizer: feature source -> director -> world(s) -> transition -> feedback trails -> post.
 import { Program, Target, DataTexture, FULLSCREEN_VS, drawFullscreen } from '../gl/gl.js';
 import { Post } from '../gl/post.js';
+import { Resolution } from '../gl/resolution.js';
 import { WORLD_BY_ID } from './worlds/index.js';
 import { Director } from './director.js';
 import { createFrame, SPEC_BANDS } from './score.js';
@@ -46,7 +47,6 @@ void main() {
   outColor = vec4(max(cur, prev), 1.0);
 }`;
 
-const QUALITY = { high: { maxW: 2560, scale: 1.0 }, medium: { maxW: 1920, scale: 0.8 }, low: { maxW: 1280, scale: 0.6 } };
 
 class TargetSet {
   constructor(gl) {
@@ -68,7 +68,7 @@ export class Visualizer {
   constructor(gl, caps, settings) {
     this.gl = gl;
     this.settings = settings;
-    this.ctx = { gl, caps, quality: settings.quality === 'auto' ? 'high' : settings.quality };
+    this.ctx = { gl, caps, quality: settings.quality === 'auto' || settings.quality === 'native' ? 'high' : settings.quality };
     this.post = new Post(gl);
     this.mixProg = new Program(gl, FULLSCREEN_VS, MIX_FS, 'viz-mix');
     this.fbProg = new Program(gl, FULLSCREEN_VS, FEEDBACK_FS, 'viz-feedback');
@@ -86,8 +86,7 @@ export class Visualizer {
     this.source = null;
     this.analyser = null;
     this.visTime = 0;
-    this.scale = 1;
-    this.frameMs = 16;
+    this.res = new Resolution('visualizer', { high: { maxW: 2560 }, medium: { maxW: 1920, scale: 0.8 }, low: { maxW: 1280, scale: 0.6 } });
     this.fftTmp = null;
     this.waveTmp = null;
     this.errors = new Set();
@@ -199,18 +198,12 @@ export class Visualizer {
    */
   render(outW, outH, out = null) {
     const gl = this.gl;
-    const t0 = performance.now();
     const set = out ? this.sets.thumb : this.sets.main;
     let w, h;
     if (out) {
       w = out.w;
       h = out.h;
-    } else {
-      const q = QUALITY[this.settings.quality] || QUALITY.high;
-      const base = Math.min(1, q.maxW / outW) * q.scale;
-      w = Math.round(outW * base * this.scale);
-      h = Math.round(outH * base * this.scale);
-    }
+    } else ({ w, h } = this.res.size(outW, outH));
     set.resize(w, h);
     const S = this.state;
     const U = this._uniforms(w, h);
@@ -238,19 +231,6 @@ export class Visualizer {
     set.cur = 1 - set.cur;
     const post = out ? { ...S.post, letterbox: 0, grain: 0, shockStrength: S.post.shockStrength * 0.5 } : S.post;
     this.post.run(next.tex, w, h, out ? out.w : outW, out ? out.h : outH, post, this.visTime, out);
-    if (!out) this._adapt(performance.now() - t0);
-  }
-
-  _adapt(ms) {
-    // keep a smooth frame rate on slower GPUs by trading resolution
-    if (this.settings.quality !== 'auto') {
-      this.scale = 1;
-      return;
-    }
-    this.frameMs = this.frameMs * 0.95 + ms * 0.05;
-    const gpuMs = this.lastInterval || 16.7;
-    if (gpuMs > 21 && this.scale > 0.5) this.scale = Math.max(0.5, this.scale - 0.02);
-    else if (gpuMs < 15 && this.scale < 1) this.scale = Math.min(1, this.scale + 0.005);
   }
 
   dispose() {

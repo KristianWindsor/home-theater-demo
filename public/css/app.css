@@ -295,6 +295,11 @@ a { color: var(--accent-2); }
 .sync-flash.on { background: #fff; box-shadow: 0 0 40px #fff; }
 .help { color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
 
+/* ------------------------------------------------------------------ performance overlay */
+.perf { position: fixed; left: 0.6rem; top: 0.6rem; z-index: 7; pointer-events: none; white-space: pre; font-family: var(--mono);
+  font-size: 0.72rem; line-height: 1.5; color: #d6dded; background: rgba(0, 0, 0, 0.72); border: 1px solid var(--line);
+  border-radius: 10px; padding: 0.55rem 0.75rem; max-width: calc(100vw - 1.2rem); overflow: hidden; text-overflow: ellipsis; }
+
 /* ------------------------------------------------------------------ toasts */
 .toast { pointer-events: auto; background: rgba(12, 15, 22, 0.92); border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem 1.1rem;
   max-width: 26rem; font-size: 0.92rem; line-height: 1.4; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); animation: fadeIn 0.3s ease both; }

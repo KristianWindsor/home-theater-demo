@@ -1,9 +1,9 @@
-// Base for full-screen experience scenes: an HDR target at an adaptive resolution, the shared bloom/tonemap
-// post chain, a camera helper and sensible defaults for lights.
+// Base for full-screen experience scenes: an HDR target at the resolution Settings → Quality asks for (see
+// gl/resolution.js), the shared bloom/tonemap post chain, a camera helper and sensible defaults for lights.
 import { Target } from '../../gl/gl.js';
 import { Post } from '../../gl/post.js';
 import { m4, v3, fitFov } from '../../gl/math.js';
-import { settings } from '../../core/settings.js';
+import { Resolution } from '../../gl/resolution.js';
 
 export class StageScene {
   constructor(app, score, run) {
@@ -13,7 +13,7 @@ export class StageScene {
     this.run = run;
     this.post = new Post(this.gl);
     this.target = new Target(this.gl, 4, 4, { hdr: true, depth: true });
-    this.scale = 1;
+    this.res = new Resolution('experience', { high: { maxW: 1920 }, medium: { maxW: 1600 }, low: { maxW: 1280 } });
     this.t = 0;
   }
 
@@ -53,28 +53,14 @@ export class StageScene {
 
   render(w, h, t, dt) {
     const gl = this.gl;
-    const q = settings.quality;
-    const maxW = q === 'low' ? 1280 : q === 'medium' ? 1600 : 1920;
-    const s = Math.min(1, maxW / w) * this.scale;
-    this.target.resize(w * s, h * s);
+    const r = this.res.size(w, h);
+    this.target.resize(r.w, r.h);
     this.target.bind();
-    const t0 = performance.now();
     const src = this.draw(t, dt, this.target) || this.target;
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
     gl.depthMask(true);
     this.post.run(src.tex, src.w, src.h, w, h, this.postParams(t), t);
-    this._adapt(performance.now() - t0);
-  }
-
-  _adapt() {
-    if (settings.quality !== 'auto') {
-      this.scale = 1;
-      return;
-    }
-    const ms = this.app.frameInterval || 16.7;
-    if (ms > 22 && this.scale > 0.5) this.scale = Math.max(0.5, this.scale - 0.02);
-    else if (ms < 15.5 && this.scale < 1) this.scale = Math.min(1, this.scale + 0.004);
   }
 
   light() {

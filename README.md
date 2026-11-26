@@ -53,6 +53,10 @@ where quality is decided.
   Chrome/Firefox also skip AC-3/E-AC-3). `prepare_media.py` (below) solves this without losing quality.
   What you do lose is Atmos/DTS:X *object* metadata. In a 5.1 room without height speakers that makes no
   practical difference: the 7.1 bed is decoded and the receiver/OS folds it into your 5.1.
+- **Picture quality**: *Settings → Picture → Quality*. **Native** renders the room, the shows and the visualizer at
+  every pixel of the screen (full 4K on a 4K TV). **Auto** (the default) starts at High and goes up to native while
+  frames stay on time at the display's refresh rate, down when they don't. Turn on the **Performance overlay** there
+  to see, on the real machine, the rendered resolution, frame times, dropped video frames and the GPU in use.
 - **HDR**: HEVC/HDR10 plays in Chrome/Edge on Windows with a GPU that decodes HEVC; turn on HDR in Windows
   display settings. The movie page tells you when a file can't play in the current browser and why.
 - **Streaming over the internet**: files are sent byte-for-byte (no transcoding), so a 4K remux needs its full

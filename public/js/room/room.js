@@ -2,6 +2,7 @@
 // Built from config/room.json so it can be matched to the real room.
 import { Program, Target, FULLSCREEN_VS, drawFullscreen } from '../gl/gl.js';
 import { Post } from '../gl/post.js';
+import { Resolution } from '../gl/resolution.js';
 import { m4, v3, clamp, lerp, easeInOut, fitFov } from '../gl/math.js';
 import { roundedBox, cylinder, speakerCone, torus, plane, quad } from './meshes.js';
 
@@ -279,6 +280,7 @@ export class Room {
     this.skyProg = new Program(gl, FULLSCREEN_VS, SKY_FS, 'room-sky');
     this.post = new Post(gl);
     this.target = new Target(gl, 4, 4, { hdr: true, depth: true });
+    this.res = new Resolution('room', { high: { maxW: 1920 }, medium: { maxW: 1600 }, low: { maxW: 1280 } });
     this.tvTarget = new Target(gl, 640, 360, { hdr: false });
     this.cardTex = gl.createTexture();
     this.meshCache = new Map();
@@ -749,8 +751,8 @@ export class Room {
   render(w, h, fixtures, hoverId = null) {
     const gl = this.gl;
     const tvTex = this._renderTV();
-    const scale = Math.min(1, 1920 / w);
-    this.target.resize(w * scale, h * scale);
+    const r = this.res.size(w, h);
+    this.target.resize(r.w, r.h);
     this.target.bind();
     gl.clearColor(0.004, 0.004, 0.006, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

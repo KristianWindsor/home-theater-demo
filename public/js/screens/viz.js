@@ -5,6 +5,7 @@ import { settings, setSetting } from '../core/settings.js';
 import { WORLDS, WORLD_BY_ID } from '../viz/worlds/index.js';
 import { rgbToCss } from '../viz/palette.js';
 import { ScoreSource } from '../viz/score.js';
+import { frameClock } from '../gl/resolution.js';
 
 export function viz(root, id) {
   const app = ctx.app;
@@ -172,7 +173,7 @@ export function viz(root, id) {
       `hits     kick ${meter(f.kick, 4)} snare ${meter(f.snare, 4)} hat ${meter(f.hat, 4)}`,
       f.hasScore ? `story    build ${f.build.toFixed(2)}  pre-drop ${f.preDrop.toFixed(2)}  drop ${f.drop.toFixed(2)}` : '',
       f.hasScore && f.nextSection ? `next     ${f.nextSection.kind} in ${f.timeToNext.toFixed(1)} s${Number.isFinite(f.nextDropIn) ? `   drop in ${f.nextDropIn.toFixed(1)} s` : ''}` : '',
-      `render   ${(1000 / (app.frameInterval || 16.7)).toFixed(0)} fps  scale ${v.scale.toFixed(2)}  sync ${settings.avOffsetMs} ms`,
+      `render   ${(1000 / (app.frameInterval || 16.7)).toFixed(0)} fps  ${frameClock.last ? `${frameClock.last.w}×${frameClock.last.h} (${Math.round(frameClock.last.scale * 100)}%)` : ''}  sync ${settings.avOffsetMs} ms`,
     ].filter(Boolean);
     hud.textContent = lines.join('\n');
   }, 100);

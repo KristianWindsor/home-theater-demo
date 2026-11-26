@@ -106,8 +106,10 @@ export function settingsScreen(root) {
   }
 
   const visualPanel = h('div', { class: 'panel' },
-    h('h3', {}, 'Visualizer'),
-    row('Quality', 'Auto lowers the resolution if frames drop', seg('quality', [['auto', 'Auto'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']], () => toast('Quality applies to newly built worlds; reload for a clean start.'))),
+    h('h3', {}, 'Picture'),
+    row('Quality', 'For the room, the shows and the visualizer. Native renders every pixel (4K on a 4K screen). Auto starts at High and goes up to native while frames stay on time, down when they don’t.',
+      seg('quality', [['auto', 'Auto'], ['native', 'Native'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']])),
+    row('Performance overlay', 'Rendered resolution, frame times, dropped video frames and the audio output, over every screen', toggle('perfOverlay')),
     row('Intensity', 'How hard the visuals react (warp, trails, punches)', ...slider('trip', 0.4, 1.6, 0.05, (v) => `${Math.round(v * 100)}%`)),
     row('Reduce flashing', 'Tames full-screen flashes and strobing at drops (photosensitivity)', toggle('reduceFlashing')),
     row('Show analysis HUD', 'Press I in the visualizer', toggle('showHud')),

@@ -15,6 +15,8 @@ import { toast, TOUCH_ONLY } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
 import { ExperienceRunner } from './experiences/core/runner.js';
+import { frameClock } from './gl/resolution.js';
+import { perfOverlay } from './core/perf.js';
 import { EXPERIENCE_BY_ID } from './experiences/index.js';
 
 const FALLBACK_ROOM = {
@@ -75,6 +77,7 @@ class App {
     this.engine = new AudioEngine(settings);
     this.music = new MusicPlayer(this);
     this.tvTarget = new Target(this.gl, 640, 360, { hdr: false });
+    perfOverlay(this);
     this.router = new Router(document.getElementById('ui'), screens);
     events({
       analysis: (d) => {
@@ -90,6 +93,7 @@ class App {
       if (k === 'upmix' && this.engine.ready) this.engine.setUpmix(v);
       if (k === 'fxLevel' && this.engine.ready) this.engine.setFxLevel(v);
       if (k === 'showLevel' && this.engine.ready) this.engine.setShowLevel(v);
+      if (k === 'quality') this._resize();
       if (k === 'surroundMap' && this.engine.ready) this.engine.speakers = {};
     });
     this._input();
@@ -153,7 +157,8 @@ class App {
   }
 
   _resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Native quality draws every device pixel; otherwise very dense screens (phones) are capped at 2x
+    const dpr = settings.quality === 'native' ? window.devicePixelRatio || 1 : Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.round(window.innerWidth * dpr);
     this.canvas.height = Math.round(window.innerHeight * dpr);
   }
@@ -163,6 +168,7 @@ class App {
     const dt = Math.min(0.1, Math.max(0.001, (now - this.last) / 1000));
     this.last = now;
     this.frameInterval = (this.frameInterval || 16.7) * 0.9 + (now - (this.prevNow || now)) * 0.1;
+    if (this.prevNow) frameClock.tick(now - this.prevNow);
     this.prevNow = now;
     try {
       this._render(dt);
@@ -198,7 +204,6 @@ class App {
     if (musicOn) this.viz().update(m.visualTime, dt, m.playing);
     if (this.mode === 'viz' && musicOn) {
       const v = this.viz();
-      v.lastInterval = this.frameInterval;
       v.render(W, H);
       this.rig.setMode('music');
       this.rig.update(dt, { frame: v.frame, state: v.state });
@@ -224,6 +229,7 @@ class App {
       return;
     }
     // video mode: nothing to draw on the canvas; keep the virtual lights in "bias" mode
+    frameClock.last = null;
     this.rig.update(dt, null);
   }
 
