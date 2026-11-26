@@ -8,9 +8,13 @@ const config = require('./config');
 const library = require('./library');
 const media = require('./media');
 const analysis = require('./analysis');
+const bucket = require('./bucket');
 const { sendJSON, sendError, sendBuffer, safeJoin, mimeFor, readJSONBody, TEXT_EXT } = require('./util');
 
 const VERSION = require('../package.json').version;
+
+// Movies kept in S3 play from CloudFront (or S3 itself), and sidecar posters load from there too
+const MEDIA_ORIGIN = bucket.viewerOrigin() ? ` ${bucket.viewerOrigin()}` : '';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -21,8 +25,8 @@ const SECURITY_HEADERS = {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
-    "media-src 'self' blob:",
+    `img-src 'self' data: blob:${MEDIA_ORIGIN}`,
+    `media-src 'self' blob:${MEDIA_ORIGIN}`,
     "connect-src 'self'",
     "worker-src 'self' blob:",
     "object-src 'none'",
@@ -200,6 +204,17 @@ function serveMedia(req, res, url) {
   const rest = url.pathname.slice('/media/'.length);
   const category = rest.split('/')[0];
   if (!library.CATEGORIES.includes(category)) return sendError(req, res, 404, 'not found');
+  if (bucket.isRemote(category)) {
+    // Only objects the last listing saw get a signed link, so this can't be used to sign arbitrary keys
+    let key;
+    try {
+      key = `${category}/${decodeURIComponent(rest.slice(category.length + 1))}`;
+    } catch {
+      return sendError(req, res, 400, 'bad path');
+    }
+    if (!bucket.has(key)) return sendError(req, res, 404, 'not found');
+    return media.redirectToBucket(res, key);
+  }
   const file = safeJoin(path.join(config.mediaDir, category), rest.slice(category.length + 1));
   if (!file) return sendError(req, res, 400, 'bad path');
   return media.streamFile(req, res, file);

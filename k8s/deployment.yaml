@@ -20,7 +20,8 @@ spec:
       imagePullSecrets:
         - name: dockerhub
       initContainers:
-        # Pull demos/, movies/, music/ from the public media bucket onto the media volume.
+        # Pull demos/ and music/ from the media bucket onto the media volume (music plays through Web Audio,
+        # which needs it same-origin). Movies stay in the bucket and stream from CloudFront.
         # The bucket is the source of truth (--delete); only new or changed files are downloaded.
         # If S3 can't be reached, start anyway with whatever is already on the volume.
         - name: media-sync
@@ -28,18 +29,27 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - >-
-              aws s3 sync "s3://$MEDIA_BUCKET/" /media/ --delete --no-sign-request --region us-west-1 --no-progress
+              aws s3 sync "s3://$MEDIA_BUCKET/" /media/ --delete --exclude 'movies/*' --region us-west-1 --no-progress
               || echo "media sync failed; starting with what is already on the volume"
           env:
             - name: MEDIA_BUCKET
               value: kwk8s-home-theater-files
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: home-theater-media
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: home-theater-media
+                  key: aws-secret-access-key
           resources:
             requests:
               cpu: 10m
               memory: 64Mi
             limits:
-              # aws-cli buffers downloads in memory; multi-GB movies need headroom
-              memory: 1Gi
+              memory: 512Mi
           volumeMounts:
             - name: media
               mountPath: /media
@@ -51,6 +61,30 @@ spec:
           env:
             - name: ANALYZER_CONCURRENCY
               value: "1"
+            # Movies: listed and probed from the bucket, played from CloudFront with signed links
+            - name: MEDIA_BUCKET
+              value: kwk8s-home-theater-files
+            - name: MEDIA_BUCKET_REGION
+              value: us-west-1
+            - name: MEDIA_CDN_URL
+              value: https://home-theater-media.kwk8s.tech
+            - name: MEDIA_CDN_KEY_PAIR_ID
+              value: KA673EAIJBHY4
+            - name: MEDIA_CDN_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: home-theater-media
+                  key: cdn-private-key.pem
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: home-theater-media
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: home-theater-media
+                  key: aws-secret-access-key
           resources:
             requests:
               cpu: 50m

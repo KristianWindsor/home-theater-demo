@@ -1,9 +1,11 @@
 'use strict';
 // Byte-exact media streaming (HTTP Range), plus cached thumbnails, posters, covers and
-// lossless FLAC copies for audio formats browsers can't decode.
+// lossless FLAC copies for audio formats browsers can't decode. Movies kept in S3 are never streamed
+// from here: the browser is redirected to a signed CloudFront link (server/bucket.js).
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
+const bucket = require('./bucket');
 const { mimeFor, sendError, run, limiter } = require('./util');
 
 const thumbLimit = limiter(config.thumbConcurrency);
@@ -81,8 +83,16 @@ function exists(p) {
   }
 }
 
+/** What ffmpeg reads: the local file, or a presigned S3 URL for movies kept in the bucket. */
 function mediaPath(item) {
+  if (item.remote) return bucket.serverUrl(`${item.category}/${item.file}`);
   return path.join(config.mediaDir, item.category, item.file);
+}
+
+/** Send the browser to a signed link for an object in the bucket. */
+function redirectToBucket(res, key) {
+  res.writeHead(302, { Location: bucket.viewerUrl(key), 'Cache-Control': 'no-store' });
+  return res.end();
 }
 
 const HDR_TONEMAP = 'zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,' +
@@ -137,23 +147,33 @@ async function thumb(req, res, item, query) {
 }
 
 const IMAGE_NAMES = ['poster', 'folder', 'cover', 'front', 'album'];
-function findSidecarImage(item) {
-  const full = mediaPath(item);
-  const dir = path.dirname(full);
-  const base = path.basename(full, path.extname(full));
-  const candidates = [];
-  for (const ext of ['.jpg', '.jpeg', '.png', '.webp']) {
-    candidates.push(path.join(dir, base + ext), path.join(dir, `${base}-poster${ext}`));
-  }
+const IMAGE_EXT = ['.jpg', '.jpeg', '.png', '.webp'];
+/** Possible sidecar images for a media file, as paths relative to its category folder. */
+function sidecarNames(file) {
+  const dir = path.dirname(file);
+  const base = path.basename(file, path.extname(file));
+  const names = [];
+  for (const ext of IMAGE_EXT) names.push(path.join(dir, base + ext), path.join(dir, `${base}-poster${ext}`));
   // folder-level art only applies when the folder holds a single title (movies) or an album (music)
-  for (const n of IMAGE_NAMES) for (const ext of ['.jpg', '.jpeg', '.png', '.webp']) candidates.push(path.join(dir, n + ext));
-  return candidates.find((c) => exists(c)) || null;
+  for (const n of IMAGE_NAMES) for (const ext of IMAGE_EXT) names.push(path.join(dir, n + ext));
+  return names;
+}
+
+function findSidecarImage(item) {
+  const dir = path.join(config.mediaDir, item.category);
+  return sidecarNames(item.file).map((n) => path.join(dir, n)).find((c) => exists(c)) || null;
 }
 
 /** GET /api/poster/:id — sidecar image if present, else a frame from the film. */
 async function poster(req, res, item, query) {
   if (!item) return sendError(req, res, 404, 'not found');
-  const side = item.category !== 'demos' || path.dirname(item.file) !== '.' ? findSidecarImage(item) : null;
+  const wantSidecar = item.category !== 'demos' || path.dirname(item.file) !== '.';
+  if (wantSidecar && item.remote) {
+    const key = sidecarNames(item.file).map((n) => `${item.category}/${n}`).find((k) => bucket.has(k));
+    if (key) return redirectToBucket(res, key);
+    return thumb(req, res, item, query);
+  }
+  const side = wantSidecar ? findSidecarImage(item) : null;
   if (side) {
     res.setHeader('Cache-Control', 'private, max-age=86400');
     return streamFile(req, res, side);
@@ -209,4 +229,4 @@ async function compat(req, res, item) {
   return streamFile(req, res, out, 'audio/flac');
 }
 
-module.exports = { streamFile, thumb, poster, cover, compat, mediaPath, findSidecarImage };
+module.exports = { streamFile, redirectToBucket, thumb, poster, cover, compat, mediaPath, findSidecarImage };

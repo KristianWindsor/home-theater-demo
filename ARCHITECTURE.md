@@ -4,6 +4,7 @@
                     ┌──────────────────────────── server (Docker) ────────────────────────────┐
   media/ (ro) ────► │ library.js  scan + ffprobe cache + catalog.json merge + scene edits       │
                     │ media.js    byte-exact Range streaming, thumbnails, covers, FLAC fallbacks │
+  S3 bucket ──────► │ bucket.js   movies: S3 listing, presigned reads, CloudFront signed links   │
                     │ analysis.js queue ─► python3 analyzer/analyze.py ─► data/scores/<id>.json  │
                     │ index.js    HTTP API + server-sent events (analysis progress, library)    │
                     └────────────────────────────────────────────────────────────────────────────┘

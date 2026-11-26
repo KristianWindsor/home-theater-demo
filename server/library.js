@@ -1,10 +1,11 @@
 'use strict';
-// Scans MEDIA_DIR/{demos,movies,music}, probes files (cached), merges curated metadata from
-// config/catalog.json and scene edits saved from the app (data/scenes.json).
+// Scans MEDIA_DIR/{demos,movies,music} (movies from S3 when MEDIA_BUCKET is set), probes files (cached),
+// merges curated metadata from config/catalog.json and scene edits saved from the app (data/scenes.json).
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
 const { probe } = require('./probe');
+const bucket = require('./bucket');
 const { findSidecarImage } = require('./media');
 const { VIDEO_EXT, AUDIO_EXT, idFor, readJSONFile, writeJSONAtomic, parseTime, limiter } = require('./util');
 
@@ -15,6 +16,7 @@ const scenesFile = () => path.join(config.dataDir, 'scenes.json');
 let state = { items: [], byId: new Map(), scannedAt: 0, scanning: null };
 let probeCache = null;
 const probeLimit = limiter(4);
+const lastListing = new Map(); // category -> remote objects from the last successful listing
 const listeners = new Set();
 
 function onChange(fn) {
@@ -84,12 +86,29 @@ function normScenes(list, duration) {
   });
 }
 
-async function probeCached(category, rel, full, st) {
+/** Remote files in a category: [{ rel, size, mtimeMs }]. If S3 can't be reached, the last listing stands. */
+async function listRemote(category) {
+  const prefix = `${category}/`;
+  let objects;
+  try {
+    objects = await bucket.list(prefix);
+    lastListing.set(category, objects);
+  } catch (e) {
+    console.warn(`[library] ${e.message}; keeping the last listing`);
+    objects = lastListing.get(category) || [];
+  }
+  return objects
+    .map((o) => ({ rel: o.key.slice(prefix.length), size: o.size, mtimeMs: o.mtime }))
+    .filter((f) => !f.rel.split('/').some((part) => part.startsWith('.')));
+}
+
+/** `source()` returns what ffprobe reads: a local path or a presigned S3 URL (only built on a cache miss). */
+async function probeCached(category, rel, source, st) {
   if (!probeCache) probeCache = readJSONFile(probeCacheFile(), {});
   const key = `${category}/${rel}`;
   const hit = probeCache[key];
   if (hit && hit.size === st.size && hit.mtime === Math.floor(st.mtimeMs)) return hit.probe;
-  const info = await probeLimit(key, () => probe(full));
+  const info = await probeLimit(key, () => probe(source()));
   probeCache[key] = { size: st.size, mtime: Math.floor(st.mtimeMs), probe: info };
   return info;
 }
@@ -102,9 +121,12 @@ async function scan() {
     const items = [];
     const seen = new Set();
     for (const category of CATEGORIES) {
+      const remote = bucket.isRemote(category);
       const dir = path.join(config.mediaDir, category);
-      const files = walk(dir).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-      for (const rel of files) {
+      const files = remote ? await listRemote(category) : walk(dir).map((rel) => ({ rel }));
+      files.sort((a, b) => a.rel.localeCompare(b.rel, undefined, { numeric: true }));
+      for (const f of files) {
+        const rel = f.rel;
         const ext = path.extname(rel).toLowerCase();
         const isVideo = VIDEO_EXT.has(ext);
         const isAudio = AUDIO_EXT.has(ext);
@@ -112,15 +134,18 @@ async function scan() {
         if (category === 'music' && !isAudio) continue;
         if (category === 'movies' && !isVideo) continue;
         const full = path.join(dir, rel);
-        let st;
-        try {
-          st = fs.statSync(full);
-        } catch {
-          continue;
+        let st = f;
+        if (!remote) {
+          try {
+            st = fs.statSync(full);
+          } catch {
+            continue;
+          }
         }
+        const source = remote ? () => bucket.serverUrl(`${category}/${rel}`) : () => full;
         let info;
         try {
-          info = await probeCached(category, rel, full, st);
+          info = await probeCached(category, rel, source, st);
         } catch (e) {
           console.warn(`[library] probe failed for ${category}/${rel}: ${e.message}`);
           continue;
@@ -145,6 +170,7 @@ async function scan() {
           description: meta.description || '',
           tags: meta.tags || [],
         };
+        if (remote) item.remote = true; // streamed from the bucket (see server/bucket.js)
         if (isVideo) {
           const editScenes = edits[key];
           item.scenes = normScenes(editScenes || meta.scenes || [], info.duration);

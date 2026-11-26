@@ -245,6 +245,10 @@ plays on. On the home screen: drag to orbit, scroll to zoom, keys **1–6** trig
 | `THUMB_CONCURRENCY` | 2 | parallel ffmpeg thumbnail jobs |
 | `ALLOW_SCENE_EDITS` | `true` | set `false` to make scene lists read-only |
 | `PYTHON`, `FFMPEG`, `FFPROBE` | from `PATH` | tool locations when running outside Docker |
+| `MEDIA_BUCKET` | | read movies from this S3 bucket (`movies/…`) instead of `MEDIA_DIR/movies`; needs `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with `s3:ListBucket` and `s3:GetObject` |
+| `MEDIA_BUCKET_REGION` | `AWS_REGION` or `us-east-1` | the bucket's region |
+| `MEDIA_CDN_URL`, `MEDIA_CDN_KEY_PAIR_ID`, `MEDIA_CDN_PRIVATE_KEY` | | play bucket movies through CloudFront signed URLs (CloudFront domain, public key ID, the private key PEM itself); without them the browser gets presigned S3 links |
+| `MEDIA_LINK_HOURS` | 12 | how long a movie link handed to the browser stays valid |
 
 Audio files browsers can't decode (ALAC, AIFF, WMA, APE, DSD, DTS/TrueHD music…) are converted once to a
 lossless FLAC copy in `DATA_DIR/compat` the first time they're played.
@@ -265,23 +269,42 @@ python3 analyzer/tests/test_analyzer.py                                       # 
 Runs on the kwk8s k3s server (`k8s/`). Pushing to `main` builds the image and rolls it out (GitHub Actions);
 changes under `k8s/` are applied by hand with `kubectl apply -f k8s/`.
 
-Media isn't in git or the image. It lives in the public S3 bucket `kwk8s-home-theater-files`, laid out like
-`media/` (`demos/`, `movies/`, `music/`). When the pod starts, an init container syncs the bucket onto the media
-volume, so adding or removing files is:
+Media isn't in git or the image. It lives in the private S3 bucket `kwk8s-home-theater-files`, laid out like
+`media/` (`demos/`, `movies/`, `music/`).
+
+- **Movies never touch the server.** The app lists and probes them in the bucket, and the browser plays them from
+  CloudFront (`https://home-theater-media.kwk8s.tech`) through signed links that expire after `MEDIA_LINK_HOURS`.
+  `/media/movies/…` answers with a redirect to a fresh link. The bytes are the file's, untouched, as before.
+  New movies show up within a couple of minutes, no restart needed.
+- **Music and demos** are synced onto the media volume by an init container when the pod starts. Music has to
+  be same-origin: it plays through Web Audio, which hears a cross-origin source without CORS as silence. The bucket is the source of truth: files deleted from it are deleted from the server on the
+  next restart. New songs are analyzed on the server after the restart.
 
 ```bash
 aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md --exclude '*.DS_Store'   # add --delete to remove files too
-kubectl rollout restart deployment/home-theater                                             # pulls only what changed
+kubectl rollout restart deployment/home-theater                                             # only for new music/demos
 ```
 
-The bucket is the source of truth: files deleted from it are deleted from the server on the next restart.
-New songs are analyzed on the server after the restart.
+CloudFront caches files for up to a day; after replacing a movie under the same name, run
+`aws cloudfront create-invalidation --distribution-id E1MHJ4UQCS4J29 --paths '/movies/*'`.
+
+The pod reads its AWS keys (IAM user `home-theater`, read-only on the bucket) and the CloudFront signing key from
+the `home-theater-media` secret, created by hand:
+
+```bash
+kubectl create secret generic home-theater-media \
+  --from-file=aws-access-key-id=… --from-file=aws-secret-access-key=… \
+  --from-file=cdn-private-key.pem=…   # its public key is CloudFront key KA673EAIJBHY4 (key group home-theater-media)
+```
+
+The AWS side (bucket, CloudFront, certificate, DNS, IAM user) is described in the kwk8s.tech repo's Terraform.
 
 ## Layout
 
 ```
 server/          zero-dependency Node server: library + ffprobe cache, byte-range streaming, analysis queue,
-                 thumbnails/covers, lossless fallbacks, scene saving, server-sent events
+                 thumbnails/covers, lossless fallbacks, scene saving, server-sent events, S3 + CloudFront
+                 signed links for movies kept in a bucket (bucket.js)
 analyzer/        the music analyzer (Python) and its tests
 scripts/         prepare_media.py, make_test_media.py, synth_song.py, render_experience.mjs
 config/          catalog.json (scenes), room.json (3D room)
