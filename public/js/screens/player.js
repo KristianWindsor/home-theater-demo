@@ -14,7 +14,8 @@ function buildPlaylist(app, arg, q) {
   if (!item) return { list: [] };
   const scenes = (item.scenes || []).map((s, i) => ({ ...s, i })).filter((s) => s.start !== null);
   if (q.get('scenes') === 'all') {
-    return { title: item.title, queue: true, list: scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i })) };
+    const list = scenes.map((s) => ({ item, start: s.start, end: s.end, title: s.title, scene: s.i }));
+    return { title: item.title, queue: true, list, first: Math.min(Math.max(0, Number(q.get('at')) || 0), Math.max(0, list.length - 1)) };
   }
   if (q.get('scene') !== null) {
     const i = Number(q.get('scene'));
@@ -155,6 +156,10 @@ export function player(root, arg, q) {
     idx = i;
     entry = pl.list[i];
     ending = false;
+    // the address bar follows what's playing, so a refresh or a shared link opens this scene
+    const id = encodeURIComponent(entry.item.id);
+    if (pl.queue) app.router.replaceQuiet(`/play/${id}?scenes=all&at=${i}`);
+    else if (entry.scene !== undefined && entry.scene !== null) app.router.replaceQuiet(`/play/${id}?scene=${entry.scene}`);
     endCard.style.display = 'none';
     titleEl.textContent = pl.queue ? `${pl.title} — ${i + 1}/${pl.list.length}` : entry.item.title;
     sceneEl.textContent = entry.title && entry.title !== entry.item.title ? entry.title : '';
@@ -190,9 +195,13 @@ export function player(root, arg, q) {
     ending = true;
     const auto = pl.queue || settings.sceneEnd === 'next';
     if (settings.sceneEnd === 'continue' && !pl.queue) return;
-    fade.style.transition = `opacity ${FADE_OUT}s ease`;
-    fade.style.opacity = 1;
-    await rampVolume(0, FADE_OUT);
+    if (settings.sceneFades) {
+      // the fade starts FADE_OUT before the endpoint and lands on black exactly at it
+      const left = entry.end ? Math.max(0.15, entry.end - video.currentTime) : FADE_OUT;
+      fade.style.transition = `opacity ${left}s ease`;
+      fade.style.opacity = 1;
+      await rampVolume(0, left);
+    }
     video.pause();
     if (auto && idx + 1 < pl.list.length) return load(idx + 1);
     if (auto && pl.sceneNav) return jumpScene(1, true);
@@ -228,6 +237,7 @@ export function player(root, arg, q) {
       return;
     }
     pl.list[0] = { item: entry.item, start: s.start, end: s.end, title: s.title, scene: s.i };
+    pl.sceneNav = true;
     load(0);
   }
 
@@ -308,13 +318,13 @@ export function player(root, arg, q) {
       fill.style.width = `${d ? (t / d) * 100 : 0}%`;
       const rel = entry.end ? ` · scene ${fmtTime(Math.max(0, entry.end - t))} left` : '';
       timeEl.textContent = `${fmtTime(t, d >= 3600)} / ${fmtTime(d, d >= 3600)}${rel}`;
-      if (entry.end && !ending && t >= entry.end - (settings.sceneFades ? FADE_OUT * 0.5 : 0)) finishScene();
+      if (entry.end && !ending && t >= entry.end - (settings.sceneFades ? FADE_OUT : 0)) finishScene();
     }
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
   video.addEventListener('ended', finishScene);
-  load(0);
+  load(pl.first || 0);
 
   return {
     unmount() {

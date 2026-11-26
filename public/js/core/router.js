@@ -23,6 +23,15 @@ export class Router {
     } else location.hash = h;
   }
 
+  /** Point the address bar at `path` without leaving the current screen (no remount), e.g. the scene now playing. */
+  replaceQuiet(path) {
+    const h = `#${path}`;
+    if (location.hash === h) return;
+    history.replaceState(null, '', h);
+    const r = this._parse();
+    if (this.current) Object.assign(this.current, { path: r.path, arg: r.arg, query: r.query });
+  }
+
   back(fallback = '/') {
     if (history.length > 1 && this.current && this.current.path !== '/') history.back();
     else this.go(fallback);
