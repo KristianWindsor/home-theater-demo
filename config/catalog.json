@@ -45,6 +45,40 @@
         { "title": "Garden fight: Iron Man and War Machine vs. the drones", "start": "1:44:16", "end": "1:52:14", "star": true, "note": "Crash-landing in the Japanese garden, the drones close in, Whiplash, the explosion, and the rescue of Pepper.", "highlight": { "start": "1:49:44", "end": "1:52:11.5", "note": "Whiplash arrives, the crossed repulsor beams, and the drones blow up across the Expo." } }
       ]
     },
+    "Star Wars Episode II - Attack of the Clones (2002).mp4": {
+      "title": "Star Wars: Episode II – Attack of the Clones",
+      "year": 2002,
+      "description": "4K HDR with the 6.1 mix (DTS-HD MA, lossless; on a 5.1 system the back-centre channel is shared between the surrounds). Starred: the speeder chase, Obi-Wan vs. Jango Fett, the asteroid field, the Clone War and the duel with Dooku. Times are frame-checked against this 2:22:34 copy.",
+      "scenes": [
+        { "title": "Opening crawl and the bombing on the landing platform", "start": "0:00:21", "end": "0:04:22.1", "note": "The crawl, the Naboo cruiser touches down on Coruscant, and the explosion." },
+        { "title": "Speeder chase through Coruscant", "start": "0:14:19.9", "end": "0:24:48.2", "star": true, "note": "From Obi-Wan's leap through the window after the probe droid to Zam Wesell's death in the alley: the traffic lanes, Anakin's dive, the club.", "highlight": { "start": "0:14:52.1", "end": "0:17:17.4", "note": "Anakin's yellow speeder after Zam's, through the traffic lanes and the power couplings." } },
+        { "title": "Obi-Wan vs. Jango Fett on Kamino", "start": "1:00:46.1", "end": "1:03:41.1", "star": true, "note": "In the rain on the landing platform, through Slave I lifting off." },
+        { "title": "The asteroid field and the seismic charges", "start": "1:06:24.4", "end": "1:11:18.7", "star": true, "note": "Slave I hunts Obi-Wan through the rings of Geonosis. The seismic charges are a moment of silence, then the subwoofer." },
+        { "title": "The droid factory", "start": "1:35:27.9", "end": "1:42:44.8", "note": "Anakin and Padmé on the assembly line: conveyors, presses and crushers, and C-3PO's head on a battle droid.", "highlight": { "start": "1:39:54", "end": "1:42:14.5", "note": "Padmé's fall onto the conveyor, the presses and the crushers." } },
+        { "title": "The Geonosis arena", "start": "1:45:14.1", "end": "1:56:22.4", "note": "The reek, the acklay and the nexu, then two hundred Jedi against the droid army.", "highlight": { "start": "1:50:39.4", "end": "1:53:16.8", "note": "The Jedi against the droid army on the arena floor." } },
+        { "title": "Yoda's cavalry: the Clone War begins", "start": "1:56:22.5", "end": "2:04:48.9", "star": true, "note": "The gunships drop into the arena, then the battle on the plain: AT-TEs, walkers and the Trade Federation core ships.", "highlight": { "start": "2:01:17.1", "end": "2:03:53.2", "note": "Gunships over the battlefield, the walkers firing, and a core ship hit and coming down." } },
+        { "title": "Count Dooku vs. Obi-Wan, Anakin and Yoda", "start": "2:04:49", "end": "2:11:23.6", "star": true, "note": "The hangar duel, Anakin loses his arm, then Yoda.", "highlight": { "start": "2:07:42", "end": "2:10:30.4", "note": "Yoda arrives, turns back the Force lightning and draws his lightsaber; Dooku escapes." } },
+        { "title": "Ending: the clone army marches", "start": "2:12:54.9", "end": "2:15:54.9", "note": "The Imperial March over the clone troopers boarding their ships, then the wedding on Naboo." }
+      ]
+    },
+    "The Odyssey (2026).mp4": {
+      "title": "The Odyssey",
+      "year": 2026,
+      "description": "Christopher Nolan's Homer, 4K HDR with the 5.1 mix (DTS-HD MA, lossless). The story is told out of order: Odysseus tells it to Calypso and later to Penelope, and Menelaus tells Telemachus about Troy. Starred: the Cyclops, the Trojan horse, the giants, Charybdis and Scylla, Zeus's storm and the fight in the hall. Times are frame-checked against this 2:52:35 copy.",
+      "scenes": [
+        { "title": "The Cyclops", "start": "0:30:41.8", "end": "0:44:56", "star": true, "note": "Landing on the island, the cave and its cheese, the boulder, the night the Cyclops eats two men, the burning stake, and the run for the ships.", "highlight": { "start": "0:42:02.9", "end": "0:44:56", "note": "Out of the cave with the flock, the blinded Cyclops after them, and the dash to the ships." } },
+        { "title": "The Trojan horse", "start": "0:48:56.2", "end": "0:57:26", "star": true, "note": "Menelaus tells Telemachus: days inside the horse, Sinon's \"gift for Athena\", the Trojans hauling it in, the moonless night and the gates.", "highlight": { "start": "0:49:46.5", "end": "0:52:43.1", "note": "Sinon presents the horse, the Trojans haul it in to chanting, and the crowd falls silent." } },
+        { "title": "Storms and the giants", "start": "0:59:09", "end": "1:05:32.3", "star": true, "note": "Storm after storm, then the Laestrygonians: a giant child, its parents, and the run back to the ships.", "highlight": { "start": "1:01:39.2", "end": "1:04:29.4", "note": "The giants arrive, the retreat through the trees to the beach, and the rowing out under attack." } },
+        { "title": "Circe's island", "start": "1:06:13.6", "end": "1:20:47.1", "note": "The landing party at Circe's house, the men turned into animals, and Odysseus against Circe.", "highlight": { "start": "1:10:50.1", "end": "1:13:12.3", "note": "The feast, Circe's humming, and the men turned into pigs." } },
+        { "title": "Into Hades", "start": "1:20:47.2", "end": "1:30:58.1", "note": "The trench of blood, Sinon's ghost, Agamemnon, Tiresias's prophecy, and the unburied crew.", "highlight": { "start": "1:28:33.4", "end": "1:30:58.1", "note": "Tiresias's prophecy, then the unburied crew comes clamouring out of the dark." } },
+        { "title": "The Sirens", "start": "1:39:16.2", "end": "1:42:14.4", "note": "Odysseus tied to the mast. The sound of the world falls away while he hears the song." },
+        { "title": "Charybdis and Scylla", "start": "1:42:14.5", "end": "1:45:09.6", "star": true, "note": "Steering down the whirlpool's slope and out the other side, then the monster in the cliffs takes six men." },
+        { "title": "Zeus's storm", "start": "1:49:52", "end": "1:52:50.3", "star": true, "note": "The calm that lures them out onto the sea, then the storm that sinks the ship." },
+        { "title": "The fall of Troy, as Odysseus tells it", "start": "2:21:37.7", "end": "2:26:53.3", "note": "Still in disguise, Odysseus tells Penelope what happened once the gates were open.", "highlight": { "start": "2:21:37.7", "end": "2:24:08.3", "note": "The army pours into the city and the fight becomes a massacre." } },
+        { "title": "The bow and the suitors", "start": "2:29:54.4", "end": "2:42:02.2", "star": true, "note": "Penelope's challenge, the suitors who can't string the bow, the beggar who can, and the fight in the hall.", "highlight": { "start": "2:34:10", "end": "2:37:19", "note": "The bow is strung, the shot through the axes on a thunderclap, and the fight begins." } },
+        { "title": "Ending: chasing the escaping sun", "start": "2:42:02.3", "end": "2:45:38.8", "note": "Odysseus and Penelope, and the bard's song over the end." }
+      ]
+    },
     "Countdown Test Film (2026).mp4": {
       "title": "Countdown Test Film",
       "description": "Generated test film (scripts/make_test_media.py): the browser-ready copy with lossless FLAC 5.1.",
