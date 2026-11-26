@@ -1,4 +1,4 @@
-// Movies grid, movie detail (scenes, chapters, compatibility) and the scene editor.
+// Movies (one row of scenes per film), movie detail (scenes, chapters, compatibility) and the scene editor.
 import { h, icon, fmtTime, fmtTimePrecise, parseTime, fmtBytes, toast } from '../core/dom.js';
 import { api } from '../core/api.js';
 import { ctx } from '../core/context.js';
@@ -51,7 +51,7 @@ function sceneThumbTime(s) {
 }
 
 /** One scene as a tile: click to play just that scene. */
-function sceneTile(item, s, i, { showMovie = false, autofocus = false } = {}) {
+function sceneTile(item, s, i, { autofocus = false } = {}) {
   const app = ctx.app;
   const has = s.start !== null;
   const long = item.duration >= 3600;
@@ -66,8 +66,45 @@ function sceneTile(item, s, i, { showMovie = false, autofocus = false } = {}) {
     h('span', { class: 'badge time' }, has ? `${fmtTime(s.start, long)}${s.end ? ` – ${fmtTime(s.end, long)}` : ''}` : 'no time yet')),
   h('div', { class: 'body' },
     h('div', { class: 'title' }, s.title),
-    showMovie ? h('div', { class: 'meta' }, item.title) : null,
     s.note ? h('div', { class: 'note' }, s.note) : null));
+}
+
+/**
+ * One film on the Movies page: its title and Play/Details, then all its scenes in film order as one row
+ * (starred ones are the highlights). A film without scenes shows its own card instead.
+ */
+function shelf(item, { autofocus = false, observers }) {
+  const app = ctx.app;
+  const scenes = (item.scenes || []).map((s, i) => ({ s, i })).filter(({ s }) => s.start !== null);
+  const row = h('div', { class: 'shelf-row' }, scenes.length
+    ? scenes.map(({ s, i }, n) => sceneTile(item, s, i, { autofocus: autofocus && n === 0 }))
+    : videoCard(item, () => app.router.go(`/movie/${item.id}`), autofocus));
+  // Arrows for mouse users (remotes and arrow keys move tile to tile; touch swipes)
+  const page = (dir) => row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' });
+  const prev = h('button', { class: 'btn btn-icon shelf-nav', 'aria-label': 'Earlier scenes', onclick: () => page(-1) }, icon('back'));
+  const next = h('button', { class: 'btn btn-icon shelf-nav', 'aria-label': 'Later scenes', onclick: () => page(1) }, icon('forward'));
+  const update = () => {
+    const max = row.scrollWidth - row.clientWidth;
+    prev.hidden = next.hidden = max <= 4;
+    prev.classList.toggle('end', row.scrollLeft <= 4);
+    next.classList.toggle('end', row.scrollLeft >= max - 4);
+  };
+  row.addEventListener('scroll', update, { passive: true });
+  const ro = new ResizeObserver(update);
+  ro.observe(row);
+  observers.push(ro);
+  return h('section', { class: 'shelf' },
+    h('div', { class: 'shelf-head' },
+      h('div', { class: 'shelf-name' },
+        h('h2', {}, item.title),
+        h('div', { class: 'meta' }, [item.year, fmtTime(item.duration), scenes.length ? `${scenes.length} scenes` : null].filter(Boolean).join(' · '))),
+      h('div', { class: 'badges' }, badges(item)),
+      h('div', { class: 'spacer' }),
+      h('div', { class: 'shelf-actions' },
+        h('button', { class: 'btn', onclick: () => app.router.go(`/play/${item.id}?t=0`) }, icon('play'), h('span', { class: 'lbl' }, 'Play film')),
+        h('button', { class: 'btn', onclick: () => app.router.go(`/movie/${item.id}`) }, icon('info'), h('span', { class: 'lbl' }, 'Details')),
+        prev, next)),
+    row);
 }
 
 export function movies(root) {
@@ -75,25 +112,17 @@ export function movies(root) {
   app.setMode('room');
   app.room.goTo('couch', 1.6);
   const vids = app.library.items.filter((i) => i.category === 'movies');
-  // Every starred scene, from every film, as its own tile
-  const starred = app.library.items.filter((i) => i.kind === 'video')
-    .flatMap((v) => (v.scenes || []).map((s, i) => ({ v, s, i })))
-    .filter(({ s }) => s.star && s.start !== null);
+  const observers = [];
   const el = h('div', { class: 'screen scrim' },
     topbar('Movies'),
     h('div', { class: 'scroll' },
-      starred.length ? [
-        h('div', { class: 'section-title' }, 'Scenes'),
-        h('div', { class: 'scene-list' }, starred.map(({ v, s, i }, n) => sceneTile(v, s, i, { showMovie: true, autofocus: n === 0 }))),
-      ] : null,
-      h('div', { class: 'section-title' }, 'Movies'),
       vids.length
-        ? h('div', { class: 'grid' }, vids.map((v, i) => videoCard(v, () => app.router.go(`/movie/${v.id}`), !starred.length && i === 0)))
+        ? vids.map((v, i) => shelf(v, { autofocus: i === 0, observers }))
         : h('div', { class: 'empty' }, 'No movies yet. Put video files in ', h('code', {}, 'media/movies'),
           '. MKV and MP4 work; run ', h('code', {}, 'scripts/prepare_media.py'), ' on Blu-ray rips so their audio plays in a browser.')));
   root.appendChild(el);
   focusFirst(el);
-  return {};
+  return { unmount: () => observers.forEach((o) => o.disconnect()) };
 }
 
 // ------------------------------------------------------------------ detail
@@ -173,7 +202,7 @@ export function movie(root, id) {
           h('div', { class: 'n' }, i + 1),
           h('input', { class: 'input', value: r.title, oninput: (e) => { r.title = e.target.value; } }),
           timeInput('start'), timeInput('end'),
-          h('button', { class: `btn btn-icon ${r.star ? 'active' : ''}`, title: 'Star (shows it under Scenes on the Movies page)', onclick: (e) => { r.star = !r.star; e.currentTarget.classList.toggle('active', r.star); } }, icon(r.star ? 'starFill' : 'star')),
+          h('button', { class: `btn btn-icon ${r.star ? 'active' : ''}`, title: 'Star (marks it as a highlight)', onclick: (e) => { r.star = !r.star; e.currentTarget.classList.toggle('active', r.star); } }, icon(r.star ? 'starFill' : 'star')),
           h('button', { class: 'btn btn-icon', title: 'Delete', onclick: () => { rows.splice(i, 1); drawRows(); } }, icon('trash')));
       }));
     };

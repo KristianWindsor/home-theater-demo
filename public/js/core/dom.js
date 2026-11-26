@@ -20,6 +20,7 @@ export function h(tag, attrs = {}, ...children) {
 
 const P = {
   back: '<path d="M15 5l-7 7 7 7"/>',
+  forward: '<path d="M9 5l7 7-7 7"/>',
   play: '<path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/>',
   pause: '<path d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z" fill="currentColor" stroke="none"/>',
   prev: '<path d="M6 5v14M19 5l-10 7 10 7z"/>',
