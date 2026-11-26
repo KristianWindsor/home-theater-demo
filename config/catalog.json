@@ -18,6 +18,33 @@
         { "title": "Ending: a dark knight", "start": "2:21:38", "end": "2:24:31", "star": true, "note": "Gordon's speech over the final chase, through the title card." }
       ]
     },
+    "Star Wars Episode I - The Phantom Menace (1999).mp4": {
+      "title": "Star Wars: Episode I – The Phantom Menace",
+      "year": 1999,
+      "description": "The 4K 60 fps edition with the 7.1 mix. Starred: the Boonta Eve podrace. Times are frame-checked against this 2:16:12 copy.",
+      "scenes": [
+        { "title": "Opening crawl and the Jedi aboard the Trade Federation ship", "start": "0:00:21", "end": "0:07:56", "note": "The crawl, the gas, the droidekas, and the escape down the ventilation shaft." },
+        { "title": "Through the planet core in the bongo", "start": "0:17:14", "end": "0:20:41", "note": "\"There's always a bigger fish.\"" },
+        { "title": "Escape from Naboo and the blockade", "start": "0:24:46", "end": "0:26:35", "note": "Out of the Theed hangar, through the blockade, R2 fixes the shield." },
+        { "title": "Boonta Eve podrace", "start": "0:55:05", "end": "1:10:07", "star": true, "note": "From the flyover of the arena to Anakin carried off by the crowd: the grid, the stall, Tusken Raiders, Sebulba, the finish." },
+        { "title": "Darth Maul ambushes Qui-Gon on Tatooine", "start": "1:16:21", "end": "1:18:05" },
+        { "title": "The Battle of Naboo begins", "start": "1:45:08", "end": "1:50:25", "note": "The Gungan army rises out of the swamp, the shields go up, the droid army unfolds." },
+        { "title": "Duel of the Fates", "start": "1:50:25", "end": "2:05:15", "note": "Maul in the hangar, the generator room duel, the space battle and the control ship, intercut to Qui-Gon's last words." },
+        { "title": "Victory parade", "start": "2:08:29", "end": "2:09:53" }
+      ]
+    },
+    "Iron Man 2 (2010).mp4": {
+      "title": "Iron Man 2",
+      "year": 2010,
+      "description": "4K HDR with the 7.1 mix. Starred: Iron Man and War Machine against Hammer's drones in the Expo's Japanese garden. Times are frame-checked against this 2:04:37 copy.",
+      "scenes": [
+        { "title": "Shoot to Thrill: Iron Man drops into the Stark Expo", "start": "0:05:01", "end": "0:07:17" },
+        { "title": "Monaco: Whiplash on the track", "start": "0:30:05", "end": "0:37:15", "note": "The race, the electric whips, the suitcase suit." },
+        { "title": "Birthday party: Iron Man vs. War Machine", "start": "0:56:24", "end": "0:59:33" },
+        { "title": "Hammer's drones turn on the Expo", "start": "1:35:23", "end": "1:44:16", "note": "War Machine is hijacked, the chase over Flushing Meadows, Black Widow in the hallway." },
+        { "title": "Garden fight: Iron Man and War Machine vs. the drones", "start": "1:44:16", "end": "1:52:14", "star": true, "note": "Crash-landing in the Japanese garden, the drones close in, Whiplash, the explosion, and the rescue of Pepper." }
+      ]
+    },
     "Countdown Test Film (2026).mp4": {
       "title": "Countdown Test Film",
       "description": "Generated test film (scripts/make_test_media.py): the browser-ready copy with lossless FLAC 5.1.",
