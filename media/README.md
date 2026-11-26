@@ -10,6 +10,8 @@ media/
             name as a song is its music video (scripts/fetch_music_video.py makes both from YouTube)
   trailers/ Dolby / DTS / THX trailers (video), one folder per brand: trailers/Dolby/Spheres.mp4.
             A .jpg with the same name is its poster
+  sounds/   optional speaker clicks in place of the synthesized ones: one per speaker (FL.flac, FC.flac,
+            SR.flac, LFE.flac...) or mains.flac for any without its own. Any level; the app sets it
 ```
 
 Blu-ray / UHD rips usually need one pass of `scripts/prepare_media.py` so their audio

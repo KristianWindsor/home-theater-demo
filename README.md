@@ -75,6 +75,9 @@ media/
             A video with the same name as a song ("My Girls.opus" + "My Girls.webm") is its music video
   trailers/ Dolby/DTS/THX trailers (video), one folder per brand (trailers/Dolby/Spheres.mp4). Optional poster:
             same name .jpg
+  sounds/   optional speaker clicks for the 3D room, in place of the synthesized ones: one per speaker (FL.flac,
+            FR.flac, FC.flac, SL.flac, SR.flac, LFE.flac) or mains.flac for any without its own. Any level: the
+            app sets it. Settings → Speaker sounds → Original plays the synthesized ones
 ```
 
 New files show up automatically (the library rescans every couple of minutes, or *Settings → Rescan*).
@@ -334,13 +337,13 @@ Media isn't in git or the image. It lives in the private S3 bucket `kwk8s-home-t
   CloudFront (`https://home-theater-media.kwk8s.tech`) through signed links that expire after `MEDIA_LINK_HOURS`.
   `/media/movies/…` answers with a redirect to a fresh link. The bytes are the file's, untouched, as before.
   New movies show up within a couple of minutes, no restart needed.
-- **Music, demos and trailers** are synced onto the media volume by an init container when the pod starts. Music has to
+- **Music, demos, trailers and sounds** are synced onto the media volume by an init container when the pod starts. Music has to
   be same-origin: it plays through Web Audio, which hears a cross-origin source without CORS as silence. The bucket is the source of truth: files deleted from it are deleted from the server on the
   next restart. New songs are analyzed on the server after the restart.
 
 ```bash
 aws s3 sync media/ s3://kwk8s-home-theater-files/ --exclude README.md --exclude '*.DS_Store'   # add --delete to remove files too
-kubectl rollout restart deployment/home-theater                                             # only for new music/demos/trailers
+kubectl rollout restart deployment/home-theater                                             # only for new music/demos/trailers/sounds
 ```
 
 CloudFront caches files for up to a day; after replacing a movie under the same name, run

@@ -285,4 +285,32 @@ function resetScenes(item) {
   return item.scenes;
 }
 
-module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, onChange, loadRoom, CATEGORIES };
+// Speaker sounds (MEDIA_DIR/sounds): LFE.flac plays on the subwoofer, FL.flac, FC.flac... on their own
+// speaker, mains.flac on any other. Not library items and not in git; the app falls back to its synthesized sounds.
+const SOUND_DIR = 'sounds';
+const SOUND_ROLES = ['FL', 'FR', 'FC', 'SL', 'SR', 'BL', 'BR', 'LFE', 'mains'];
+
+/** { role: url } for the sound files present. The ?v= changes with the file, so a replaced sound isn't cached. */
+function speakerSounds() {
+  const dir = path.join(config.mediaDir, SOUND_DIR);
+  const out = {};
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return out;
+  }
+  for (const name of names.sort()) {
+    const ext = path.extname(name);
+    const role = SOUND_ROLES.find((r) => r.toLowerCase() === path.basename(name, ext).toLowerCase());
+    if (!role || !AUDIO_EXT.has(ext.toLowerCase()) || out[role]) continue;
+    try {
+      const st = fs.statSync(path.join(dir, name));
+      out[role] = `/media/${SOUND_DIR}/${encodeURIComponent(name)}?v=${Math.floor(st.mtimeMs)}`;
+    } catch { /* gone */ }
+  }
+  return out;
+}
+
+module.exports = { scan, ensureFresh, get, all: () => state.items, saveScenes, resetScenes, onChange, loadRoom, speakerSounds,
+  CATEGORIES, SOUND_DIR };

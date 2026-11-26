@@ -20,7 +20,7 @@ spec:
       imagePullSecrets:
         - name: dockerhub
       initContainers:
-        # Pull demos/, trailers/ and music/ from the media bucket onto the media volume (music plays through Web Audio,
+        # Pull demos/, trailers/, music/ and sounds/ from the media bucket onto the media volume (music plays through Web Audio,
         # which needs it same-origin). Movies stay in the bucket and stream from CloudFront.
         # The bucket is the source of truth (--delete); only new or changed files are downloaded.
         # If S3 can't be reached, start anyway with whatever is already on the volume.

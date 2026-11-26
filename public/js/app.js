@@ -4,6 +4,7 @@ import { Room } from './room/room.js';
 import { Visualizer } from './viz/visualizer.js';
 import { AudioEngine, ROLE_LABEL } from './audio/engine.js';
 import { Synth } from './audio/synth.js';
+import { SpeakerSamples } from './audio/samples.js';
 import { BUILTIN_DEMOS } from './audio/demos.js';
 import { MusicPlayer } from './audio/music.js';
 import { LightRig } from './lights/rig.js';
@@ -108,6 +109,9 @@ class App {
     try {
       await this.engine.init();
       this.synth = new Synth(this.engine);
+      // speaker sounds from media/sounds, if there are any; until they're decoded the synth plays
+      if (!this.samples) this.samples = new SpeakerSamples(this.engine);
+      this.samples.load(this.library.sounds);
       if (!this._unlockBound) {
         this._unlockBound = true;
         const unlock = () => this.engine.unlock();
@@ -134,6 +138,7 @@ class App {
         const lib = await api.library();
         this.library = lib;
         this.items = new Map(lib.items.map((i) => [i.id, i]));
+        if (this.samples) this.samples.load(lib.sounds); // only refetches when the list of sound files changed
         if (!initial) this.emit('library', lib);
         return lib;
       } catch (e) {
@@ -377,7 +382,8 @@ class App {
     const role = sp.role;
     const sound = { FL: ['zap', { pitch: 1 }], FR: ['zap', { pitch: 1.26 }], FC: ['chime', { base: 660 }], SL: ['whoosh', {}],
       SR: ['whoosh', { dur: 1.1 }], BL: ['whoosh', {}], BR: ['whoosh', {}], LFE: ['boom', {}] }[role] || ['chime', {}];
-    const s = this.synth.play(role, sound[0], sound[1]);
+    const fromFile = settings.speakerSounds !== 'original' && this.samples ? this.samples.play(role) : null;
+    const s = fromFile || this.synth.play(role, sound[0], sound[1]);
     this.room.setActivity(id, role === 'LFE' ? 1.6 : 1);
     const fx = this.rig.fixtures.find((f) => f.anchor === id);
     const warm = role === 'LFE' ? [1.0, 0.08, 0.02] : role === 'FC' ? [0.95, 0.75, 0.4] : [0.25, 0.55, 1.0];

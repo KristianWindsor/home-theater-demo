@@ -130,6 +130,7 @@ async function api(req, res, url) {
     return sendJSON(req, res, 200, {
       items: items.map(publicItem),
       room: library.loadRoom(),
+      sounds: library.speakerSounds(),
       server: { version: VERSION, sceneEdits: config.allowSceneEdits, analysis: analysis.stats() },
     });
   }
@@ -200,10 +201,10 @@ async function api(req, res, url) {
 }
 
 function serveMedia(req, res, url) {
-  // /media/<category>/<path...>
+  // /media/<category>/<path...>, and /media/sounds/<file> (speaker sounds)
   const rest = url.pathname.slice('/media/'.length);
   const category = rest.split('/')[0];
-  if (!library.CATEGORIES.includes(category)) return sendError(req, res, 404, 'not found');
+  if (!library.CATEGORIES.includes(category) && category !== library.SOUND_DIR) return sendError(req, res, 404, 'not found');
   if (bucket.isRemote(category)) {
     // Only objects the last listing saw get a signed link, so this can't be used to sign arbitrary keys
     let key;
