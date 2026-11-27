@@ -14,6 +14,7 @@ import { Router } from './core/router.js';
 import { installNav } from './core/nav.js';
 import { installNowPlaying } from './core/nowplaying.js';
 import { Showcase } from './core/showcase.js';
+import { unlockMedia } from './core/unlock.js';
 import { toast, TOUCH_ONLY } from './core/dom.js';
 import { ctx } from './core/context.js';
 import { screens } from './screens/index.js';
@@ -110,6 +111,8 @@ class App {
   }
 
   async enter() {
+    // first, while this is still the tap (iPhone: films, trailers and music may then start without one)
+    unlockMedia();
     try {
       await this.engine.init();
       this.synth = new Synth(this.engine);
@@ -120,6 +123,8 @@ class App {
         this._unlockBound = true;
         const unlock = () => this.engine.unlock();
         for (const ev of ['pointerup', 'touchend', 'click', 'keydown']) document.addEventListener(ev, unlock, true);
+        // the events Safari counts as a tap for media (until both media elements are unlocked; cheap after)
+        for (const ev of ['touchend', 'click', 'keydown']) document.addEventListener(ev, unlockMedia, true);
         document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && unlock());
       }
     } catch (e) {

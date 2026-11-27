@@ -261,7 +261,13 @@ export function player(root, arg, q) {
     try {
       await video.play();
     } catch (e) {
-      console.warn('[player] play()', e);
+      if (e && e.name === 'NotAllowedError') {
+        // the browser wants a tap before it plays sound (iPhone, e.g. after a reload landed here): say so, rather
+        // than a spinner over a black frame
+        spinner.classList.remove('on');
+        playBtn.replaceChildren(icon('play'));
+        toast('Tap play to start.', 'warn', 6000);
+      } else if (!e || e.name !== 'AbortError') console.warn('[player] play()', e);
     }
     drawTimeline();
     requestAnimationFrame(() => {
