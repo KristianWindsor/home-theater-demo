@@ -3,7 +3,7 @@
 *A Windsor home theater showcase.* It runs in a browser on the machine connected to the TV/receiver:
 
 - **3D home screen**: a model of the room (couch, four towers, center, the subwoofer, the TV, the Hue
-  lights), with one way in: **Play the showcase** under the TV (or click the TV). Click a speaker and a sound
+  lights). Click the TV to **play the showcase**. Click a speaker and a sound
   plays from **only that speaker**; click the sub for a sub drop; click the couch to sit down. Speakers move and
   lights glow with the actual output levels. The rest is a smaller row below, Settings is the gear in the corner,
   beside a chip that says what the speakers are getting (and leads to speaker setup).
@@ -153,7 +153,7 @@ name your copy to match. If its studio logos run longer or shorter, shift the ti
 
 ## The showcase
 
-*Play the showcase* (or a click on the TV) plays `config/showcase.json`: a short evening in the theater with a
+A click on the TV in the room plays the showcase, `config/showcase.json`: a short evening in the theater with a
 beginning and an end. Out of the box: *Awakening* (one tick, then the whole room joins in), Dolby's *Amaze*
 trailer, the Batpod and the truck flip from The Dark Knight, the seismic charges in the asteroid field from
 Attack of the Clones, the break and drop of Animal Collective's *My Girls* with its music video, the drop in
@@ -164,7 +164,7 @@ a closing card. The film and song stretches are a minute or so each. A chip at t
 Each step is a show (`"show": id` with `"from"`/`"to"` seconds), a stretch of a film or a cinema demo
 (`"movie"` / `"trailer"`: the file, `"start"`/`"end"`; no end plays to the end), or a stretch of a song (`"song"`:
 the file, `"start"`/`"end"`) in the visualizer, or with `"video": true` its music video. `"or"` lists stand-ins for when a file isn't in the library (a fresh install plays the
-shows instead). The home screen's *7 minutes · A little of everything* comes from the steps and `"line"`.
+shows instead). The TV's label in the room says how long it runs, from the steps.
 
 ## Experiences
 
@@ -322,7 +322,7 @@ it), and which Hue light sits behind what. Edit it to match the real room; the s
 | Everywhere | Arrows move between buttons, Enter selects, Esc/Backspace goes back |
 | Player | Space/K play-pause · ←/→ ±10 s (Shift ±60) · N/P next/previous scene · T timeline: this clip / whole film · B mark scene start · E mark scene end · F fullscreen · +/− volume |
 | Visualizer | see above |
-| Home | Enter plays the showcase (it has focus) · 1–6 speakers · C couch |
+| Home | 1–6 speakers · C couch |
 | Showcase | Next / End in the chip at the top (arrow keys reach it) · Esc or Back ends it |
 | Shows | Space/K pause · ←/→ previous/next chapter (← once: back to this chapter's start) · J/L ±10 s · R from the start · Esc stops · any key or the mouse shows the controls |
 

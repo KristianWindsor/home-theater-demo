@@ -376,9 +376,8 @@ class App {
   /** Something in the room was clicked (or chosen with the keyboard). */
   async activate(id) {
     if (id === 'tv') {
-      // the TV is the way in: it plays the showcase
-      this.room.goTo('tv', 1.1);
-      setTimeout(() => this.playShowcase(), 650);
+      // the TV is the way in: it plays the showcase (which opens in the room, so the view stays on the room)
+      this.playShowcase();
       return;
     }
     if (id === 'couch') {

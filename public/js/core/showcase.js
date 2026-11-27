@@ -1,13 +1,12 @@
-// The showcase ("Play the showcase" on the home screen, or click the TV): a few minutes of everything in order, from
-// config/showcase.json. A quiet show in the room, a stretch of a film, a song in the visualizer, another show, then a
-// closing card. Each step plays on its own screen (the room, the player, the visualizer, a full-screen show); a chip at
+// The showcase (click the TV in the room): a few minutes of everything in order, from
+// config/showcase.json: shows in the room, a trailer, stretches of films, songs with their video or the visualizer,
+// then a closing card. Each step plays on its own screen (the room, the player, the visualizer, a full-screen show); a chip at
 // the top says where it is and offers Next and End. Going anywhere else (Back, a menu) ends it.
 import { h, icon } from './dom.js';
 import { EXPERIENCE_BY_ID } from '../experiences/index.js';
 
 const DEFAULT = {
   title: 'Play the showcase',
-  line: 'A little of everything',
   steps: [{ show: 'room-wakes-up', to: 44 }, { show: 'the-passenger', to: 62 }],
   finale: { title: 'KW5.1', line: 'A Windsor home theater showcase', thanks: 'Thanks for watching' },
 };
@@ -43,7 +42,7 @@ export function showcaseProgram(app) {
     if (r) steps.push(r);
   }
   const length = steps.reduce((a, s) => a + (s.kind === 'show' ? s.to - s.from : s.end - s.start), 0);
-  return { title: cfg.title || DEFAULT.title, line: cfg.line || DEFAULT.line, finale: { ...DEFAULT.finale, ...(cfg.finale || {}) }, steps, length };
+  return { title: cfg.title || DEFAULT.title, finale: { ...DEFAULT.finale, ...(cfg.finale || {}) }, steps, length };
 }
 
 /** "5 minutes", "1 minute", "45 seconds". */
@@ -167,6 +166,17 @@ export class Showcase {
   async _playShow(st, token) {
     const app = this.app;
     const route = st.def.kind === 'room' ? '/' : `/x/${st.show}`;
+    if (st.def.kind === 'room') {
+      // a room show starts its camera from the current view: bring the view back to the whole room first, so its
+      // opening shows the speakers (not the TV, the couch, a speaker or a zoom)
+      if (!app.router.current || app.router.current.path !== '/') {
+        this._go('/');
+        // wait for the home screen: a show started before it's up would navigate there again, and the second remount
+        // of home would stop the show
+        if (!(await this._until(() => app.router.current && app.router.current.path === '/', token, 30))) return;
+      }
+      if (!(await this._roomView(token))) return;
+    }
     this.expected = route;
     const run = await app.runExperience(st.show);
     if (!run || token !== this.token) return;
@@ -180,6 +190,21 @@ export class Showcase {
     if (run.state === 'playing') await run.fadeOut(FADE);
     if (token !== this.token) return;
     this.next();
+  }
+
+  /** The room camera on the whole room (the overview), gliding there if it isn't; resolves once it's there. */
+  async _roomView(token) {
+    const room = this.app.room;
+    const ov = room.presets.overview, c = room.cam;
+    let dth = Math.abs(c.theta - ov.theta) % (2 * Math.PI);
+    if (dth > Math.PI) dth = 2 * Math.PI - dth;
+    const off = Math.hypot(c.target[0] - ov.target[0], c.target[1] - ov.target[1], c.target[2] - ov.target[2]);
+    // the overview drifts slowly from side to side when idle, so a little turn still counts
+    const there = room.camT === undefined && Math.abs(c.radius / ov.radius - 1) < 0.1 && Math.abs(c.phi - ov.phi) < 0.1 && dth < 0.5 && off < 0.2;
+    if (there) return token === this.token;
+    if (room.camT === undefined || room.preset !== 'overview') room.goTo('overview', 1.2);
+    const t0 = performance.now();
+    return this._until(() => room.camT === undefined || performance.now() - t0 > 2000, token, 50);
   }
 
   async _playSong(st, token) {

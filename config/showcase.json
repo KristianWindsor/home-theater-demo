@@ -1,7 +1,6 @@
 {
-  "_comment": "Play the showcase (the home screen, or click the TV): a few minutes of everything, in order. A step is a show (\"show\": its id, playing \"from\"/\"to\" seconds), a stretch of a film or a cinema demo (\"movie\" / \"trailer\": the file, \"start\"/\"end\"; no end plays to the end), or a stretch of a song (\"song\": the file, \"start\"/\"end\"), in the visualizer or, with \"video\": true, its music video. \"or\" lists stand-ins for a step whose file isn't in the library; a step with nothing available is skipped. \"title\" and \"line\" are its caption. The finale card closes it.",
+  "_comment": "Play the showcase (click the TV in the room): a few minutes of everything, in order. A step is a show (\"show\": its id, playing \"from\"/\"to\" seconds), a stretch of a film or a cinema demo (\"movie\" / \"trailer\": the file, \"start\"/\"end\"; no end plays to the end), or a stretch of a song (\"song\": the file, \"start\"/\"end\"), in the visualizer or, with \"video\": true, its music video. \"or\" lists stand-ins for a step whose file isn't in the library; a step with nothing available is skipped. \"title\" and \"line\" are its caption. The finale card closes it.",
   "title": "Play the showcase",
-  "line": "A little of everything",
   "steps": [
     { "show": "room-wakes-up", "to": 44, "title": "Awakening", "line": "The room wakes up · a KW5.1 Original" },
     { "trailer": "Dolby/Amaze.mp4", "title": "Dolby Atmos: Amaze", "line": "The trailer before the film" },
