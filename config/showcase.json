@@ -4,11 +4,10 @@
   "steps": [
     { "show": "room-wakes-up", "to": 44, "title": "Awakening", "line": "The room wakes up · a KW5.1 Original" },
     { "trailer": "Dolby/Amaze.mp4", "title": "Dolby Atmos: Amaze", "line": "The trailer before the film" },
-    { "movie": "The Dark Knight (2008).mp4", "start": "1:20:06", "end": "1:21:46", "title": "The Dark Knight", "line": "The Batpod, and the truck",
+    { "movie": "Star Wars Episode I - The Phantom Menace (1999).mp4", "start": "0:58:56", "end": "1:01:50", "title": "Star Wars: Episode I", "line": "The Boonta Eve podrace",
       "or": [
         { "show": "cold-start", "from": 0, "to": 75, "title": "Cold Start", "line": "A V10 wakes up · a KW5.1 Original" }
       ] },
-    { "movie": "Star Wars Episode II - Attack of the Clones (2002).mp4", "start": "1:06:46.2", "end": "1:08:00.9", "title": "Star Wars: Episode II", "line": "The asteroid field and the seismic charges" },
     { "song": "Animal Collective/My Girls.flac", "start": 177.5, "end": 223.4, "video": true, "title": "My Girls", "line": "Animal Collective · the music video",
       "or": [
         { "show": "glass-orchard", "from": 0, "to": 70, "title": "Glass Orchard", "line": "A glass tree, grown note by note · a KW5.1 Original" }

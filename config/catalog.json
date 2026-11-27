@@ -1,64 +1,19 @@
 {
   "_comment": "Curated metadata, keyed by file name (or path relative to the category folder). Times can be seconds or h:mm:ss. A long scene can carry a \"highlight\" ({ start, end, note }): a 2-3 minute cut inside it that its tile plays first, with the full sequence a button away. Scenes with \"start\": null show up as 'no time yet': play the movie, press B at the right moment and the time is filled in (E sets the end). Scene edits made in the app are saved to DATA_DIR/scenes.json and win over this file.",
   "movies": {
-    "The Dark Knight (2008).mp4": {
-      "title": "The Dark Knight",
-      "year": 2008,
-      "description": "The whole film, with shortcuts to the big set pieces. Starred scenes are the loudest action with the biggest score moments. Times are frame-checked against the 2:32:12 release, where the title smoke starts at 0:00:43; if your copy's studio logos run longer or shorter, shift every time by the difference.",
-      "scenes": [
-        { "title": "Opening bank heist", "start": "0:00:42", "end": "0:06:23", "star": true, "note": "From the bat logo in the smoke to the bus pulling away.", "highlight": { "start": "0:03:47.5", "end": "0:06:23", "note": "The vault, the crew turning on each other, a school bus through the wall, and the Joker unmasked." } },
-        { "title": "Parking garage: Scarecrow and the copycats", "start": "0:07:23", "end": "0:10:36" },
-        { "title": "Hong Kong extraction", "start": "0:34:00", "end": "0:37:49", "star": true, "note": "The jump from the IFC tower, the skyhook and the C-130, then Lau delivered to Gordon." },
-        { "title": "Armored truck chase and the Batpod", "start": "1:14:25", "end": "1:23:00", "star": true, "note": "Lower Fifth, the Tumbler crash, the Batpod and the truck flip.", "highlight": { "start": "1:18:47.5", "end": "1:21:46", "note": "\"Eject sequence initiated\": the Batpod bursts out of the Tumbler, the chase, and the truck flips end over end." } },
-        { "title": "Interrogation room", "start": "1:25:32", "end": "1:30:38", "highlight": { "start": "1:28:48.5", "end": "1:30:38", "note": "Batman loses his temper, and the Joker makes him choose: Harvey or Rachel." } },
-        { "title": "Race to save Rachel", "start": "1:30:38", "end": "1:36:13", "highlight": { "start": "1:33:50.5", "end": "1:36:13", "note": "The bomb goes off in the station, Rachel's last words, the warehouse explosion." } },
-        { "title": "Hospital explosion", "start": "1:51:52", "end": "1:52:54.5", "star": true, "note": "One minute, and the whole building comes down. A good subwoofer test." },
-        { "title": "The ferries", "start": "1:59:19", "end": "2:04:38", "highlight": { "start": "2:00:50.5", "end": "2:02:51", "note": "The detonators are found, the Joker's announcement, and the vote." } },
-        { "title": "Prewitt Building finale", "start": "2:04:38", "end": "2:15:22.5", "highlight": { "start": "2:05:42", "end": "2:07:29.5", "note": "SWAT moves in; Batman sees the trap with the sonar and fights his way up." } },
-        { "title": "Ending: a dark knight", "start": "2:21:38", "end": "2:24:31", "star": true, "note": "Gordon's speech over the final chase, through the title card." }
-      ]
-    },
     "Star Wars Episode I - The Phantom Menace (1999).mp4": {
       "title": "Star Wars: Episode I – The Phantom Menace",
       "year": 1999,
-      "description": "The 4K 60 fps edition with the 7.1 mix. Starred: the podrace, the Battle of Naboo and Duel of the Fates. Times are frame-checked against this 2:16:12 copy.",
+      "description": "The 4K 60 fps edition with the 7.1 mix. Eight demo scenes, each trimmed to the action with the talk cut away. Starred: the opening crawl, the podrace, the Battle of Naboo and Duel of the Fates. Times are frame-checked against this 2:16:12 copy.",
       "scenes": [
-        { "title": "Opening crawl and the Jedi aboard the Trade Federation ship", "start": "0:00:21", "end": "0:07:56", "note": "The crawl, the gas, the droidekas, and the escape down the ventilation shaft.", "highlight": { "start": "0:00:21", "end": "0:02:41", "note": "The crawl and the main theme, then the cruiser arrives at the Trade Federation ship." } },
+        { "title": "Opening crawl", "start": "0:00:21", "end": "0:02:00.8", "star": true, "note": "The fanfare and the crawl, then the Republic cruiser glides toward Naboo and the blockade." },
+        { "title": "The invasion lands on Naboo", "start": "0:09:56.7", "end": "0:11:09.2", "note": "Landing craft drop out of the fog, the creatures stampede ahead of the droid tanks, and a tank rolls right over Qui-Gon and Jar Jar." },
         { "title": "Through the planet core in the bongo", "start": "0:17:14", "end": "0:20:41", "note": "\"There's always a bigger fish.\"" },
         { "title": "Escape from Naboo and the blockade", "start": "0:24:46", "end": "0:26:35", "note": "Out of the Theed hangar, through the blockade, R2 fixes the shield." },
-        { "title": "Boonta Eve podrace", "start": "0:55:05", "end": "1:10:07", "star": true, "note": "From the flyover of the arena to Anakin carried off by the crowd: the grid, the stall, Tusken Raiders, Sebulba, the finish.", "highlight": { "start": "0:58:56", "end": "1:01:50", "note": "\"Start your engines\": the grid fires up, Anakin stalls, then launches after the pack." } },
-        { "title": "Darth Maul ambushes Qui-Gon on Tatooine", "start": "1:16:21", "end": "1:18:05" },
+        { "title": "Boonta Eve podrace", "start": "0:58:56", "end": "1:10:07", "star": true, "note": "From \"Start your engines\" to Anakin carried off by the crowd: the stall, the Tusken Raiders, Sebulba, the finish.", "highlight": { "start": "0:58:56", "end": "1:01:50", "note": "\"Start your engines\": the grid fires up, Anakin stalls, then launches after the pack." } },
+        { "title": "Darth Maul ambushes Qui-Gon on Tatooine", "start": "1:16:21", "end": "1:17:34.2", "note": "Maul drops from his speeder, the duel on the sand, and Qui-Gon's leap onto the departing ship." },
         { "title": "The Battle of Naboo begins", "start": "1:45:08", "end": "1:50:25", "star": true, "note": "The Gungan army rises out of the swamp, the shields go up, the droid army unfolds.", "highlight": { "start": "1:48:19.5", "end": "1:50:09.5", "note": "The droid army unfolds on the plain, the Gungan shield goes up, the droids march through it." } },
-        { "title": "Duel of the Fates", "start": "1:50:25", "end": "2:05:15", "star": true, "note": "Maul in the hangar, the generator room duel, the space battle and the control ship, intercut to Qui-Gon's last words.", "highlight": { "start": "1:50:25", "end": "1:52:46", "note": "Maul in the hangar, Anakin's fighter takes off, and the duel moves onto the catwalks." } },
-        { "title": "Victory parade", "start": "2:08:29", "end": "2:09:53" }
-      ]
-    },
-    "Iron Man 2 (2010).mp4": {
-      "title": "Iron Man 2",
-      "year": 2010,
-      "description": "4K HDR with the 7.1 mix. Starred: Monaco, the drones turning on the Expo, and the garden fight. Times are frame-checked against this 2:04:37 copy.",
-      "scenes": [
-        { "title": "Shoot to Thrill: Iron Man drops into the Stark Expo", "start": "0:05:01", "end": "0:07:17" },
-        { "title": "Monaco: Whiplash on the track", "start": "0:30:05", "end": "0:37:15", "star": true, "note": "The race, the electric whips, the suitcase suit.", "highlight": { "start": "0:34:20", "end": "0:37:15", "note": "Happy rams Whiplash with the Rolls, the suitcase suit, and the fight on the track." } },
-        { "title": "Birthday party: Iron Man vs. War Machine", "start": "0:56:24", "end": "0:59:33" },
-        { "title": "Hammer's drones turn on the Expo", "start": "1:35:23", "end": "1:44:16", "star": true, "note": "War Machine is hijacked, the chase over Flushing Meadows, Black Widow in the hallway.", "highlight": { "start": "1:39:00", "end": "1:41:20", "note": "The drones turn on the crowd, Iron Man saves a boy in an Iron Man mask, and the chase ends in an explosion." } },
-        { "title": "Garden fight: Iron Man and War Machine vs. the drones", "start": "1:44:16", "end": "1:52:14", "star": true, "note": "Crash-landing in the Japanese garden, the drones close in, Whiplash, the explosion, and the rescue of Pepper.", "highlight": { "start": "1:49:44", "end": "1:52:11.5", "note": "Whiplash arrives, the crossed repulsor beams, and the drones blow up across the Expo." } }
-      ]
-    },
-    "Star Wars Episode II - Attack of the Clones (2002).mp4": {
-      "title": "Star Wars: Episode II – Attack of the Clones",
-      "year": 2002,
-      "description": "4K HDR with the 6.1 mix (DTS-HD MA, lossless; on a 5.1 system the back-centre channel is shared between the surrounds). Starred: the speeder chase, Obi-Wan vs. Jango Fett, the asteroid field, the Clone War and the duel with Dooku. Times are frame-checked against this 2:22:34 copy.",
-      "scenes": [
-        { "title": "Opening crawl and the bombing on the landing platform", "start": "0:00:21", "end": "0:04:22.1", "note": "The crawl, the Naboo cruiser touches down on Coruscant, and the explosion." },
-        { "title": "Speeder chase through Coruscant", "start": "0:14:19.9", "end": "0:24:48.2", "star": true, "note": "From Obi-Wan's leap through the window after the probe droid to Zam Wesell's death in the alley: the traffic lanes, Anakin's dive, the club.", "highlight": { "start": "0:14:52.1", "end": "0:17:17.4", "note": "Anakin's yellow speeder after Zam's, through the traffic lanes and the power couplings." } },
-        { "title": "Obi-Wan vs. Jango Fett on Kamino", "start": "1:00:46.1", "end": "1:03:41.1", "star": true, "note": "In the rain on the landing platform, through Slave I lifting off." },
-        { "title": "The asteroid field and the seismic charges", "start": "1:06:24.4", "end": "1:11:18.7", "star": true, "note": "Slave I hunts Obi-Wan through the rings of Geonosis. The seismic charges are a moment of silence, then the subwoofer." },
-        { "title": "The droid factory", "start": "1:35:27.9", "end": "1:42:44.8", "note": "Anakin and Padmé on the assembly line: conveyors, presses and crushers, and C-3PO's head on a battle droid.", "highlight": { "start": "1:39:54", "end": "1:42:14.5", "note": "Padmé's fall onto the conveyor, the presses and the crushers." } },
-        { "title": "The Geonosis arena", "start": "1:45:14.1", "end": "1:56:22.4", "note": "The reek, the acklay and the nexu, then two hundred Jedi against the droid army.", "highlight": { "start": "1:50:39.4", "end": "1:53:16.8", "note": "The Jedi against the droid army on the arena floor." } },
-        { "title": "Yoda's cavalry: the Clone War begins", "start": "1:56:22.5", "end": "2:04:48.9", "star": true, "note": "The gunships drop into the arena, then the battle on the plain: AT-TEs, walkers and the Trade Federation core ships.", "highlight": { "start": "2:01:17.1", "end": "2:03:53.2", "note": "Gunships over the battlefield, the walkers firing, and a core ship hit and coming down." } },
-        { "title": "Count Dooku vs. Obi-Wan, Anakin and Yoda", "start": "2:04:49", "end": "2:11:23.6", "star": true, "note": "The hangar duel, Anakin loses his arm, then Yoda.", "highlight": { "start": "2:07:42", "end": "2:10:30.4", "note": "Yoda arrives, turns back the Force lightning and draws his lightsaber; Dooku escapes." } },
-        { "title": "Ending: the clone army marches", "start": "2:12:54.9", "end": "2:15:54.9", "note": "The Imperial March over the clone troopers boarding their ships, then the wedding on Naboo." }
+        { "title": "Duel of the Fates", "start": "1:50:25", "end": "2:04:34.8", "star": true, "note": "Maul in the hangar, the generator room duel, the space battle and the control ship, to Maul's fall.", "highlight": { "start": "1:50:25", "end": "1:52:46", "note": "Maul in the hangar, Anakin's fighter takes off, and the duel moves onto the catwalks." } }
       ]
     },
     "The Odyssey (2026).mp4": {
