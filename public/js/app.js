@@ -198,20 +198,11 @@ class App {
     const W = this.canvas.width, H = this.canvas.height;
     const xp = this.experience;
     if (xp && xp.scene) {
-      // an experience owns the screen: its scene draws (the room, or a world of its own) on the audio clock
+      // an experience owns the screen: its scene draws the room on the audio clock
       this.rig.mode = 'script';
       xp.frame(W, H, dt);
       this.rig.update(dt, null);
-      if (xp.kind === 'room') this.emit('roomframe', this.room);
-      return;
-    }
-    if (xp && xp.kind === 'stage') {
-      const gl = this.gl;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, W, H);
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      this.rig.update(dt, null);
+      this.emit('roomframe', this.room);
       return;
     }
     const m = this.music;
@@ -334,7 +325,7 @@ class App {
         if (p) this.activate(p.id);
       }
     });
-    // experiences can react to a click too (The Passenger: the sleeping cat)
+    // experiences can react to a click too (a scene with onClick(x, y))
     c.addEventListener('pointerup', (e) => {
       const xp = this.experience;
       if (!xp || xp.state !== 'playing' || !xp.scene || !xp.scene.onClick) return;
@@ -436,24 +427,18 @@ class App {
             .map((f) => ({ f, d: Math.abs(((f.az - d.angle + 540) % 360) - 180) })).sort((a, b) => a.d - b.d)[0];
           if (near && near.d < 50) this.rig.pulse(near.f.id, [1.0, 0.7, 0.35], 0.3);
         }
-      } else if (type === 'flash') {
-        this.rig.lightning(d.intensity, d.az);
-        this.room.flash = Math.max(this.room.flash, d.intensity);
-      } else if (type === 'rumble') {
-        this.room.shake = 0.04 * d.intensity;
-        this.room.setActivity('sub', 1.4);
       } else if (type === 'sweep') {
         status.text = `${d.freq.toFixed(0)} Hz`;
       } else if (type === 'end') {
         this.finishDemo();
         return;
       }
-      // only when what the banner shows changed: the orbit and the storm emit every frame, and re-rendering the
+      // only when what the banner shows changed: the orbit emits every frame, and re-rendering the
       // banner that often swapped its Stop button out from under the user's finger
       if (status.text !== before) this.emit('demo', status);
     };
-    const engine = def.show ? this.engine.onBus('show') : this.engine; // shows play at the Shows level
-    // where it was started (Original Shows): it goes back there when it ends, onto the same tile
+    const engine = def.show ? this.engine.onBus('show') : this.engine; // Orbit plays at the Sound check level
+    // where it was started (Sound Check): it goes back there when it ends, onto the same tile
     const here = this.router.current;
     const from = here && here.name !== 'home' ? here.path : prevFrom;
     this.demo = { def, ctl: def.run({ engine, synth: this.synth, emit, roles, ring }), status, from };
@@ -505,7 +490,7 @@ class App {
       if (st === 'error' && this.experience === run) toast(`${def.title} could not start: ${run.error}`, 'bad', 8000);
     });
     this.emit('experience', run);
-    const route = def.kind === 'room' ? '/' : `/x/${id}`;
+    const route = '/'; // experiences play in the room, on the home screen
     const here = this.router.current ? this.router.current.path : null;
     run.from = here && here !== route ? here : prevFrom; // a room show goes back there when it ends
     if (here !== route) this.router.go(route);
@@ -519,7 +504,7 @@ class App {
     return run;
   }
 
-  /** A room show ended, or Stop was pressed: back to where it was started (Original Shows, its tile focused). */
+  /** A room show ended, or Stop was pressed: back to where it was started (Sound Check, its tile focused). */
   finishExperience() {
     const run = this.experience;
     if (!run) return;

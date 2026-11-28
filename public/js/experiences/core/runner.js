@@ -14,7 +14,7 @@ export class ExperienceRunner {
     this.app = app;
     this.id = id;
     this.def = EXPERIENCE_BY_ID[id];
-    this.kind = this.def ? this.def.kind : 'stage';
+    this.kind = 'room'; // every experience plays in the 3D room
     this.listeners = new Map();
     this.state = 'idle';
     this.loaded = 0; // 0..1 prebuffer progress
@@ -88,7 +88,7 @@ export class ExperienceRunner {
     this.scene = new sceneMod.Scene(app, this.score, this);
     if (this.scene.init) await this.scene.init();
     if (this.state === 'stopped') return;
-    // output bus: discrete channels into the shows bus (Settings → Shows level), then the master
+    // output bus: discrete channels into the shows bus (Settings → Sound check level), then the master
     this.bus = ctx.createGain();
     this.bus.channelCount = eng.channels;
     this.bus.channelCountMode = 'explicit';

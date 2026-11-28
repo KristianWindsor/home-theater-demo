@@ -757,7 +757,10 @@ export class Room {
     const midZ = (front + back) / 2, D = back - front;
     const sh = shape || {};
     const hs = sh.height || 1;
-    const lift = (H * hs) / 2;
+    // sink (0..1): the walls, the chimney breast and the ceiling go down into the ground, leaving the floor open to
+    // the sky (the ground plane hides what's below it)
+    const sunk = (sh.sink || 0) * (H * hs + 0.1);
+    const lift = (H * hs) / 2 - sunk;
     const place = (n, pos) => {
       n.model = m4.compose(pos, n.base.rotY, [1, hs, 1]);
     };
@@ -767,7 +770,7 @@ export class Room {
     place(this.walls.frontL, [-W / 4 - (sh.split || 0), lift, front - (sh.front || 0)]);
     place(this.walls.frontR, [W / 4 + (sh.split || 0), lift, front - (sh.front || 0)]);
     for (const p of this.frontParts || []) {
-      const y = p.scaleY ? p.pos[1] * hs : p.pos[1];
+      const y = (p.scaleY ? p.pos[1] * hs : p.pos[1]) - sunk;
       p.node.model = m4.compose([p.pos[0] + p.side * (sh.split || 0), y, p.pos[2] - (sh.front || 0)], 0, [1, p.scaleY ? hs : 1, 1]);
     }
     // side walls get longer as the room grows so the corners stay closed
@@ -792,9 +795,12 @@ export class Room {
       const c = Math.cos(a), si = Math.sin(a);
       const rz = new Float32Array([c, si, 0, 0, -si, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
       const toCenter = m4.compose([-sgn * span / 2, 0, 0], 0, [span / (W / 2), 1, grow], Math.PI / 2);
-      n.model = m4.multiply(m4.multiply(m4.compose([hingeX, H * hs, midZ + ((sh.back || 0) - (sh.front || 0)) / 2]), rz), toCenter);
+      n.model = m4.multiply(m4.multiply(m4.compose([hingeX, H * hs - sunk, midZ + ((sh.back || 0) - (sh.front || 0)) / 2]), rz), toCenter);
       n.mat.emissive = [0, 0, 0];
     }
+    // all the way down: gone (nothing left to draw under the ground)
+    const gone = (sh.sink || 0) > 0.999;
+    for (const n of [...Object.values(this.walls), ...this.ceiling, ...(this.frontParts || []).map((x) => x.node)]) n.hidden = gone || (n.ceilingSide ? !showCeil : false);
     this.ground.hidden = !((sh.ground || 0) > 0.001);
     this.groundGlow = (sh.ground || 0);
     this.ribs = sh.ribs || null;

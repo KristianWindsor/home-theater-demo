@@ -2,7 +2,7 @@
 // Render an experience's soundtrack to a WAV file, exactly as the browser would play it.
 //
 //   node scripts/render_experience.mjs room-wakes-up                 -> room-wakes-up.wav (5.1, 48 kHz)
-//   node scripts/render_experience.mjs glass-orchard out.wav --stereo
+//   node scripts/render_experience.mjs room-wakes-up out.wav --stereo
 //   node scripts/render_experience.mjs --list
 //
 // The 5.1 file uses the WAVE_FORMAT_EXTENSIBLE channel mask for FL FR FC LFE SL SR, so players and

@@ -1,5 +1,6 @@
-// Built-in, fully synthesized demos. Each one drives the speakers *and* tells the 3D room what
-// to show (which speaker is active, where the sound is, when lightning strikes).
+// Built-in, fully synthesized demos: the quick tests on the Sound Check page. Each one drives the speakers *and*
+// tells the 3D room what to show (which speaker is active, where the sound is). `check` is
+// what it checks, `blurb` what to listen for.
 import { RingPanner } from './synth.js';
 import { ROLE_LABEL } from './engine.js';
 
@@ -7,32 +8,27 @@ export const BUILTIN_DEMOS = [
   {
     id: 'channel-check',
     title: 'Channel Check',
-    blurb: 'Pink noise from each speaker in turn',
+    check: 'Speaker by speaker',
+    blurb: 'Pink noise from each speaker in turn, named on screen. The plain, fast check',
     duration: 15,
     run: channelCheck,
   },
   {
-    id: 'orbit',
-    title: 'Orbit',
-    blurb: 'A helicopter circles the couch',
-    duration: 32,
-    show: true, // listed with the shows and played at the Shows level
-    run: orbit,
-  },
-  {
-    id: 'storm',
-    title: 'Thunderstorm',
-    blurb: 'Rain all around, thunder from the sub',
-    duration: 70,
-    show: true,
-    run: storm,
-  },
-  {
     id: 'lfe-sweep',
     title: 'Subwoofer Sweep',
-    blurb: '120 Hz down to 18 Hz. Start quiet',
+    check: 'Bass',
+    blurb: 'A slow tone from 120 Hz down to 18 Hz: where the sub fades out, and what rattles. Start quiet',
     duration: 24,
     run: lfeSweep,
+  },
+  {
+    id: 'orbit',
+    title: 'Orbit',
+    check: 'Panning',
+    blurb: 'A helicopter circles the couch. It should glide from speaker to speaker, never jump',
+    duration: 32,
+    show: true, // it plays at the Sound check level (the two tests above at the tests level)
+    run: orbit,
   },
 ];
 
@@ -142,98 +138,6 @@ function orbit({ engine, synth, emit, ring }) {
       for (const n of nodes) try { n.stop(); } catch { /* ignore */ }
       pan.disconnect();
       emit('orb', { on: false });
-    },
-  };
-}
-
-function storm({ engine, synth, emit, ring }) {
-  const ctx = engine.ctx;
-  const T = timers();
-  const nodes = [];
-  const speakers = ring.filter((s) => s.role !== 'LFE');
-  // rain: independent noise per speaker (decorrelated), band-limited, slowly breathing
-  const rainGains = speakers.map((s, i) => {
-    const n = synth._noise(i % 2 ? 'white' : 'pink');
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 900 + i * 130;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 7500;
-    const g = ctx.createGain();
-    g.gain.value = 0;
-    n.connect(hp).connect(lp).connect(g).connect(engine.speaker(s.role).input);
-    n.start();
-    nodes.push(n);
-    g.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 6);
-    return g;
-  });
-  // individual drops: tiny clicks scattered around
-  let dropTimer = setInterval(() => {
-    const s = speakers[Math.floor(Math.random() * speakers.length)];
-    const o = ctx.createOscillator();
-    o.frequency.value = 2500 + Math.random() * 3000;
-    const g = ctx.createGain();
-    o.connect(g).connect(engine.speaker(s.role).input);
-    const t = ctx.currentTime;
-    g.gain.setValueAtTime(0.06 * Math.random(), t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-    o.start(t);
-    o.stop(t + 0.04);
-  }, 45);
-  const thunder = (delayMs, distance, az) => {
-    T.at(delayMs, () => {
-      emit('flash', { intensity: 1 - distance * 0.5, az });
-      T.at(80 + Math.random() * 90, () => emit('flash', { intensity: 0.7 - distance * 0.4, az }));
-      T.at(300 + distance * 2200, () => {
-        // crack from the strike's direction, rumble everywhere + the sub
-        const pan = new RingPanner(engine, speakers);
-        pan.setAngle(az);
-        const crack = synth._noise('white');
-        const cf = ctx.createBiquadFilter();
-        cf.type = 'highpass';
-        cf.frequency.value = 700;
-        const cg = ctx.createGain();
-        crack.connect(cf).connect(cg).connect(pan.input);
-        const t = ctx.currentTime;
-        cg.gain.setValueAtTime(0, t);
-        cg.gain.linearRampToValueAtTime(0.7 * (1 - distance * 0.6), t + 0.01);
-        cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-        crack.start(t);
-        crack.stop(t + 0.7);
-        const rum = synth._noise('pink');
-        const rl = ctx.createBiquadFilter();
-        rl.type = 'lowpass';
-        rl.frequency.value = 220;
-        const rg = ctx.createGain();
-        rum.connect(rl).connect(rg);
-        rg.connect(pan.input);
-        const sub = ctx.createGain();
-        sub.gain.value = 1.8;
-        rg.connect(sub).connect(engine.speaker('LFE').input);
-        rg.gain.setValueAtTime(0, t);
-        rg.gain.linearRampToValueAtTime(0.8, t + 0.15 + distance * 0.4);
-        // rolling: a few swells
-        for (let k = 1; k < 5; k++) rg.gain.linearRampToValueAtTime(0.3 + Math.random() * 0.5, t + 0.4 + k * 0.7);
-        rg.gain.exponentialRampToValueAtTime(0.0001, t + 5 + distance * 3);
-        rum.start(t);
-        rum.stop(t + 9);
-        nodes.push(rum, crack);
-        emit('rumble', { intensity: 1 - distance * 0.5, dur: 4 + distance * 3 });
-      });
-    });
-  };
-  const strikes = [[7000, 0.7, -130], [16000, 0.3, 60], [24000, 0.15, -100], [33000, 0.5, 150], [41000, 0.05, -60],
-    [50000, 0.4, 0], [58000, 0.2, 120]];
-  for (const [ms, d, az] of strikes) thunder(ms, d, az);
-  T.at(64000, () => rainGains.forEach((g) => g.gain.linearRampToValueAtTime(0, ctx.currentTime + 5)));
-  T.at(70000, () => emit('end'));
-  return {
-    stop() {
-      T.clear();
-      clearInterval(dropTimer);
-      dropTimer = null;
-      for (const n of nodes) try { n.stop(); } catch { /* ignore */ }
     },
   };
 }

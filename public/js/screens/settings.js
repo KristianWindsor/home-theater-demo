@@ -46,14 +46,13 @@ export function settingsScreen(root, arg, query) {
       app.synth.play(s.role, s.role === 'LFE' ? 'lfeRumble' : 'pinkBurst', { dur: 1.5 });
       app.room.setActivity(s.id, 1);
     } }, `${s.label}`))),
-    // speaker setup lives here: both run in the room and come back to this page
+    // the tests (Channel Check, the Subwoofer Sweep, Awakening...) are on the Sound Check page
     h('div', { class: 'row' },
-      h('button', { class: 'btn', onclick: () => app.runDemo('channel-check'), 'data-key': 'setup:channel-check' }, icon('surround'), 'Channel check'),
-      h('button', { class: 'btn', onclick: () => app.runDemo('lfe-sweep'), 'data-key': 'setup:lfe-sweep' }, icon('sub'), 'Subwoofer sweep')),
-    h('div', { class: 'help' }, 'Channel check: pink noise in each speaker in turn, named on screen. Subwoofer sweep: a slow 120 → 18 Hz tone, for finding where the sub fades out and what rattles.'),
-    row('Volume', 'Master level for music, shows and tests', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
-    row('Shows level', 'The experiences, Orbit and Thunderstorm. 100% plays them as composed', ...slider('showLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
-    row('Speaker clicks & tests', 'Tapping speakers in the room, Channel Check, Subwoofer Sweep and these test buttons', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+      h('button', { class: 'btn', onclick: () => app.router.go('/soundcheck'), 'data-key': 'setup:soundcheck' }, icon('volume'), 'Sound Check')),
+    h('div', { class: 'help' }, 'Every speaker in turn, the sub, panning and placement, each one lit up in the room as it plays.'),
+    row('Volume', 'Master level for music, the sound check and tests', ...slider('volume', 0, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+    row('Sound check level', 'Awakening and Orbit. 100% plays them as composed', ...slider('showLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
+    row('Speaker clicks & tests', 'Tapping speakers in the room, Channel Check, Subwoofer Sweep and the speaker buttons above', ...slider('fxLevel', 0.05, 1, 0.01, (v) => `${Math.round(v * 100)}%`)),
     app.samples && app.samples.size ? row('Speaker sounds', 'What a speaker plays when you click it in the room: the enhanced sounds in media/sounds, or the original synthesized ones',
       seg('speakerSounds', [['enhanced', 'Enhanced'], ['original', 'Original']])) : null,
     eng.ready && eng.channels === 8 ? row('Surround speakers on a 7.1 output', 'Where the surround towers are wired', seg('surroundMap', [['side', 'Side'], ['back', 'Back']])) : null,

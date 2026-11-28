@@ -11,24 +11,31 @@ export default function setup(st, score) {
   const S = () => (seed = (seed * 1103515245 + 12345) >>> 0) % 100000 + 1;
 
   // ---------------------------------------------------------------- the space
-  st.set('space', [[0, 0], [M.D, 0], [M.D + 11, 1, 'inOut'], [M.F + 1.5, 1], [M.F + 8, 0.12, 'inOut'], [M.F + 12, 0]]);
+  // the room opens with the chord (M.D) and closes at the fold (M.F): the reverb grows and shrinks with it
+  st.set('space', [[0, 0], [M.D - 0.2, 0], [M.D + 2.8, 1, 'inOut'], [M.F + 1, 1], [M.F + 4.5, 0.12, 'inOut'], [M.F + 6.5, 0]]);
   st.set('t60A', [[0, 0.35], [M.C, 0.55], [M.D, 0.9]]);
-  st.set('t60B', [[0, 2.4], [M.D, 2.8], [M.D + 14, 7.5, 'inOut'], [M.F + 2.5, 7.5], [M.F + 8, 2.2, 'inOut']]);
-  st.set('hfB', [[0, 0.4], [M.D + 14, 0.5], [M.F + 8, 0.35]]);
+  st.set('t60B', [[0, 2.4], [M.D, 2.8], [M.D + 2.8, 6.5, 'inOut'], [M.F + 1, 6.5], [M.F + 5, 2.2, 'inOut']]);
+  st.set('hfB', [[0, 0.4], [M.D + 3, 0.5], [M.F + 5, 0.35]]);
   st.set('revA', 0.85);
-  st.set('master', 0.7);
-  st.set('er', [[0, 0], [M.D, 0], [M.D + 2.5, 0.85], [M.F + 3, 0.85], [M.F + 7, 0]]);
+  // the held breath before the sub's drop: everything (reverb tails too) ducks for the beat, then the drop at full level
+  st.set('master', [[0, 0.7], [M.breath, 0.7], [M.breath + 0.12, 0.22], [M.drop - 0.006, 0.22], [M.drop, 0.7]]);
+  st.set('er', [[0, 0], [M.D, 0], [M.D + 2.5, 0.85], [M.F + 1.5, 0.85], [M.F + 4.5, 0]]);
   st.set('room', (t) => {
     const r = score.room(t);
     const W = 6.4 + r.left + r.right;
     const open = Math.min(1, r.split / 6);
+    const walls = 1 - (r.sink || 0); // sunk into the ground, the walls stop reflecting
     return {
       w: W, front: -3.7 - r.front, back: 2.7 + r.back, h: 2.75 * r.height,
-      refl: { left: 0.72, right: 0.72, front: 0.7 * (1 - open), back: 0.62, floor: 0.32, ceiling: 0.62 * (1 - r.open) },
+      refl: { left: 0.72 * walls, right: 0.72 * walls, front: 0.7 * (1 - open) * walls, back: 0.62 * walls, floor: 0.32, ceiling: 0.62 * (1 - r.open) },
     };
   });
 
   const place = (e, extra = {}) => (e.spk ? { spk: e.spk, ...extra } : { ...e.pos, ...extra });
+  // LFE sends for the sub's moments. A send of 1 reaches the LFE channel about 13 dB down (the studio writes LFE
+  // -10 dB, and the master is 0.7); these put the drop where Dolby's Amaze puts its bass: about -8 dBFS RMS on the
+  // LFE for two seconds, peaking just under the limiter, then a long tail
+  const LFE = { rise: 3.0, drop: 17, rumble: 2.0, line: 3.2, chord: 3.6 };
 
   // ---------------------------------------------------------------- instruments
   const I = {
@@ -78,28 +85,36 @@ export default function setup(st, score) {
       }
     },
     sub(e) {
+      // the sub's line (score.js LINE): each note rings about as long as it's written; the final chord's is held, and big
       st.note(e.t, SubPulse, {
-        freq: mtof(e.n), dur: e.long ? e.dur : e.swell ? e.dur : 1.0, vel: e.vel, texture: e.swell ? 0.5 : 0.32,
+        freq: mtof(e.n), dur: e.long || e.swell ? e.dur : Math.max(0.5, (e.dur ?? 0.7) * 2.1), vel: e.vel, texture: e.swell ? 0.5 : 0.32,
         drop: e.swell ? 0.05 : 0.3, attack: e.swell ? 0.6 : 0.006, seed: S(),
-      }, { spk: 'LFE', lfe: 1, rev: 0 });
+      }, { spk: 'LFE', lfe: e.swell ? 1 : e.long ? LFE.chord : LFE.line, rev: 0 });
+      // on the strong beats the ball lands hard (marbles.js): a marble-machine kick, felt rather than heard
+      if (e.kick) st.note(e.t, Drum, { freq: 44, from: 96, decay: 0.42, vel: 0.8 * e.vel, click: 0.06, seed: S() }, { spk: 'LFE', lfe: 1, rev: 0, gain: 0.8 });
     },
-    chord(e) {
-      if (!e.hall) return;
-      const vowel = e.t < M.E ? 'o' : 'a';
-      e.pad.forEach((n, k) => {
-        const reg = n < 48 ? 'bass' : n < 55 ? 'tenor' : n < 62 ? 'alto' : 'soprano';
-        for (let v = 0; v < 2; v++) {
-          const az = -160 + ((k * 2 + v) * 320) / (e.pad.length * 2);
-          st.note(e.t, Vox, {
-            freq: mtof(n), dur: e.dur, vowel, register: reg, vel: 0.42, detune: v ? 6 : -5, attack: Math.min(1.2, e.dur * 0.4),
-            release: 1.8, vib: 0.18, seed: S(),
-          }, { az, dist: 1.7, rev: 0.75, gain: e.big ? 0.4 : 0.3 });
-        }
-        st.note(e.t, Pad, { freq: mtof(n), dur: e.dur, vel: 0.4, cutoff: 1300, attack: Math.min(1.5, e.dur * 0.45), release: 2.4, kind: 'saw' },
-          { az: k % 2 ? -100 : 100, width: 160, rev: 0.5, gain: 0.22 });
-      });
-      if (e.t >= M.E) st.note(e.t, Pad, { freq: mtof(e.bass), dur: e.dur, vel: 0.5, cutoff: 260, kind: 'organ', attack: 0.15, release: 1.2 },
-        { az: 0, width: 140, rev: 0.15, gain: 0.38, lfe: 0.3 });
+    riser(e) {
+      // a bar of build: a tone climbing in the sub, air rising all around, both cut dead at the held breath
+      const d = e.dur;
+      st.note(e.t, Glide, { f: [[0, 30.9], [d, 49]], a: [[0, 0], [d * 0.85, 1], [d - 0.015, 1], [d, 0]], dur: d, vel: e.vel, seed: S() },
+        { spk: 'LFE', lfe: LFE.rise, rev: 0 });
+      st.note(e.t, Bed, { dur: d, color: 'pink', type: 'bp', q: 1.1, cutoff: (t) => 180 * Math.pow(18, t / d),
+        gain: (t) => 0.24 * Math.pow(t / d, 2.2) * Math.min(1, Math.max(0, (d - t) / 0.02)), fade: 0.003, seed: S() }, { az: 0, width: 360, rev: 0.25 });
+    },
+    drop(e) {
+      const f = mtof(e.n);
+      // the sub: one sine, dropping from an octave and a bit above onto low D and held there, then a long tail
+      st.note(e.t, Glide, { f: [[0, f * 2.3], [0.08, f * 1.08], [0.3, f], [e.dur, f]],
+        a: [[0, 0], [0.004, 1], [0.25, 0.78], [2.0, 0.7], [3.6, 0.3], [6, 0.1], [e.dur, 0]], dur: e.dur, vel: 1, seed: S() },
+        { spk: 'LFE', lfe: LFE.drop, rev: 0 });
+      // the chest: a big kick from every speaker; the ball landing on the cabinet (front left, beside the sub)
+      st.note(e.t, Drum, { freq: 44, from: 150, decay: 1.0, vel: 1, click: 0.35, noise: 0.25, noiseFreq: 380, seed: S() }, { az: 0, width: 360, rev: 0.4, gain: 1.1 });
+      st.note(e.t, Modal, { freq: 92, modes: 'stone', t60: 0.7, hard: 0.95, vel: 1, seed: S() }, { az: 'FL', width: 30, rev: 0.35, gain: 0.9 });
+      st.note(e.t, Bed, { dur: 0.25, color: 'white', type: 'lp', q: 0.7, cutoff: 3500, gain: (t) => 0.55 * Math.exp(-t * 22), fade: 0.002, seed: S() },
+        { az: 'FL', width: 60, rev: 0.45 });
+      // and the room rumbling after it
+      st.note(e.t, Bed, { dur: 7, color: 'brown', type: 'lp', q: 0.7, cutoff: 95, gain: (t) => 0.9 * Math.exp(-t / 1.8), fade: 0.01, seed: S() },
+        { az: 0, width: 360, rev: 0.2, lfe: LFE.rumble });
     },
     swell(e) {
       const dur = e.dur;
@@ -131,43 +146,8 @@ export default function setup(st, score) {
         st.note(e.t + dur * 0.97, Modal, { freq: 140, modes: 'stone', t60: 0.9, hard: 0.4, vel: 0.5 * e.vel, seed: S() }, { az: e.pos.az, dist: 4.7, rev: 0.6, gain: 0.6 });
       }
     },
-    rise(e) {
-      const dur = e.dur;
-      [38, 45, 50, 57, 62, 69].forEach((n, k) => {
-        const f0 = mtof(n);
-        st.note(e.t + k * 0.25, Glide, {
-          dur: dur - k * 0.25, f: [[0, f0], [dur - k * 0.25, f0 * 2, 'inOut']],
-          a: [[0, 0], [dur * 0.5, 0.6], [dur - k * 0.25, 0, 'in']], spectrum: [1, 0.4, 0.25, 0.12, 0.06], vib: 0.05, vel: 0.35, seed: S(),
-        }, { az: -150 + k * 60, dist: 2, width: 60, rev: 0.7, gain: 0.5 });
-      });
-      st.note(e.t, Bed, { dur, color: 'pink', type: 'bp', q: 1.2, cutoff: (t) => 300 * Math.pow(10, t / dur), gain: (t) => 0.2 * Math.sin(Math.PI * Math.min(1, t / dur)), seed: S() },
-        { az: 0, width: 360, rev: 0.5 });
-    },
-    ceiling(e) {
-      const dur = e.dur;
-      st.note(e.t, Bed, {
-        dur, color: 'white', type: 'bp', q: 1.6, cutoff: (t) => 1800 * Math.pow(4, t / dur), gain: (t) => 0.08 * Math.sin(Math.PI * Math.min(1, t / dur)), seed: S(),
-      }, { path: (t) => ({ az: (t / dur) * 540, dist: 1.6, width: 40 }), rev: 0.6 });
-      [86, 90, 93].forEach((n, k) => st.note(e.t + 1 + k * 0.7, Vox, { freq: mtof(n - 12), dur: dur - 1.5, vowel: 'a', register: 'soprano', vel: 0.35, attack: 1.6, release: 2.5, vib: 0.15, seed: S() },
-        { az: [-60, 60, 0][k], dist: 2.4, rev: 0.8, gain: 0.4 }));
-    },
     bell(e) {
       st.note(e.t, Modal, { freq: mtof(e.n), modes: 'bell', t60: 7, hard: 0.45, vel: e.vel, seed: S() }, { ...e.pos, rev: 0.7, gain: 0.6 });
-    },
-    lead(e) {
-      const f = mtof(e.n);
-      st.play(e.t, () => new Layer([
-        new Modal(sr, { freq: f, modes: 'glass', t60: 2.2, hard: 0.6, vel: e.vel, seed: S() }),
-        new Air(sr, { freq: f, dur: e.dur, vel: e.vel, breath: 0.12, vib: 0.16, attack: 0.05, release: 0.8, chiff: 0.2, seed: S() }),
-        new Bowed(sr, { freq: f * 2, dur: e.dur, vel: e.vel * 0.5, attack: 0.08, release: 1.2, noise: 0.02, seed: S() }),
-      ], [0.5, 0.75, 0.3]), { spk: e.spk, rev: 0.45, gain: 0.62 });
-    },
-    deep(e) {
-      const f = mtof(e.n);
-      st.note(e.t, SubPulse, { freq: f / 2, dur: 6.5, vel: 1, drop: 0.25, texture: 0.45, attack: 0.012, seed: S() }, { spk: 'LFE', lfe: 1.1 });
-      st.note(e.t, Drum, { freq: 38, from: 95, decay: 1.8, vel: 0.8, click: 0.15, seed: S() }, { az: 0, width: 120, rev: 0.4, lfe: 0.9, gain: 0.8 });
-      st.note(e.t, Pad, { freq: f, dur: e.dur, vel: 0.7, cutoff: 500, kind: 'organ', attack: 0.04, release: 2.2, sub: 0.3 }, { az: 0, width: 150, rev: 0.4, gain: 0.75, lfe: 0.5 });
-      st.note(e.t, Modal, { freq: f * 2, modes: 'plate', t60: 6, hard: 0.35, vel: 0.6, seed: S() }, { az: 0, dist: 5, rev: 0.8, gain: 0.7 });
     },
     resolve(e) {
       const pad = e.pad;

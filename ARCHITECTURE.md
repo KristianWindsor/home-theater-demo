@@ -130,7 +130,7 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
         ─► LFE bus (LR4 low-pass at 110 Hz, written −10 dB) ─► 6 role channels FL FR FC LFE SL SR
         ─► fold-down matrix to the device layout ─► linked look-ahead limiter
   chunks (transferable Float32Arrays, credit-based back-pressure)
-        ─► AudioBufferSourceNodes ─► engine show bus (Shows level; discrete channels) ─► master ─► OS ─► receiver
+        ─► AudioBufferSourceNodes ─► engine show bus (Sound check level; discrete channels) ─► master ─► OS ─► receiver
                                                     scene.draw(t) on the audio clock · scene.light(fixture, t)
 ```
 
@@ -153,20 +153,25 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
   `{ path: (t) => ({ az, dist, width }) }` moves a source (t is seconds since the voice started); `lfe: k`
   also sends it to the LFE bus. Studio parameters (`master`, `space`, `t60A/B`, `er`, `room`…) take a number
   or a `[[t, value], …]` automation curve.
-- **Two kinds.** `kind: 'room'` plays on the home screen and drives the 3D room through hooks (camera override,
-  extra lights, extra layers, reshaping walls/ceiling/sky, post override). `kind: 'stage'` takes the screen at
-  `#/x/<id>` and extends `core/stage.js` (HDR target at adaptive resolution + the shared bloom/tonemap chain).
-- **Cars and cats** are physical models shared like instruments. `core/motor.js` is the car (torque curve,
-  gearbox, a lap simulation with corner limits and braking, free-revving, overrun pops) writing a 200 Hz
-  `ControlTrack` (rpm, load, fuel cut, gear, speed, position) that the sound and the picture both read.
-  `audio/vehicle.js` turns it into sound: one `EngineCore` (crank angle, firing order, per-cylinder variation,
-  exhaust waveguides per bank, intake, valvetrain, starter, pops) heard through several `EngineVoice` taps at
-  once, or from outside through `PassBy` (a delay line read at the propagation delay: Doppler, 1/r, air
-  absorption, the ground reflection). `audio/cat.js` has the purr (`PurrCore`: glottal pulses ~23/s through
-  breathing phases the score schedules, plus a pure sub layer), bell, paws, kneading and the trill;
-  `core/cat.js` ray-marches the cat (an SDF posed from JS) into the room with real depth.
-- **Easter eggs.** `hidden: true` in `experiences/index.js` keeps a piece off the Original Shows page; a scene with an
-  `onClick(x, y)` receives clicks on the picture (The Passenger starts *Purr / Rev* from its sleeping cat).
+- **In the room.** An experience plays on the home screen and drives the 3D room through hooks (camera override,
+  extra lights, extra layers, reshaping walls/ceiling/sky, post override, the TV's picture). (The full-screen kind,
+  with its own screen at `#/x/<id>` and `core/stage.js`, was retired with the last full-screen piece; it's in the
+  history before the Sound Check change if one is ever wanted again.)
+- **Marbles and the TV.** Awakening's `marbles.js` lands a marble on a speaker at every note it plays (hops between
+  landings are parabolas under real gravity, capped per marble; long gaps rest, then hop) and `tv.js` draws a
+  metronome and per-speaker note lanes onto a canvas that becomes the TV's texture (`room.setTVSource`). Both are
+  read from the score's events, so they're as pure in time as the scene.
+- **The sub's drop** (Awakening, 0:37) is measured against Dolby's *Amaze*, whose bass section puts about −8 dBFS
+  RMS at ~35 Hz on the LFE channel for two seconds, peaking at −1 dBFS, then −18 to −24 for a few seconds. In the
+  studio an LFE send of 1 reaches the LFE channel about 13 dB down (written −10 dB, times the piece's master);
+  `audio.js` keeps its sends in one `LFE` table. The limiter is linked across channels (ceiling −1 dBFS), so the
+  drop peaks just under it rather than ducking everything.
+- **Callouts.** `score.callout(t, role, text, dur)` names a speaker on screen: while score time is inside
+  `[t, t + dur)` the home screen floats a label over that speaker (its name from `room.json`, then `text`, plus
+  *simulated* when the output has no such channel). It's a pure function of score time, so pausing holds it and
+  a jump back shows it again. Awakening uses it to be a sound check.
+- **Easter eggs.** `hidden: true` in `experiences/index.js` keeps a piece off the Sound Check page; a scene with an
+  `onClick(x, y)` receives clicks on the picture (a hidden piece can be started from there).
 - **Lights.** While a piece runs, the light rig is in `script` mode and asks `scene.light(fixture, t)` for each
   fixture's colour (fixtures carry `anchor` and `az`), so a Hue sink gets the cues for free.
 
@@ -175,8 +180,8 @@ audio.js  setup(studio, score)                    scene.js  new Scene(app, score
 1. Make `public/js/experiences/<id>/` with `score.js` (`compose()` returns `score.done()`), `audio.js`
    (default export `setup(studio, score)`) and `scene.js` (`export class Scene`, with `init`, `update`, `draw`
    or the room hooks, and `light`).
-2. Register it in `experiences/index.js` (short title, one-line tagline, duration, kind) and draw its icon
-   `xp-<id>` in `core/dom.js`. It appears on the Original Shows page; give it a still from the piece as
+2. Register it in `experiences/index.js` (short title, `check`: what it checks, `listen`: what to listen for,
+   duration, `kind: 'room'`) and draw its icon `xp-<id>` in `core/dom.js`. It appears on the Sound Check page; give it a still from the piece as
    `public/img/shows/<id>.jpg` (960×540; the icon stands in until there is one). Put it in the showcase with a
    step in `config/showcase.json`.
 3. Iterate on the sound with `node scripts/render_experience.mjs <id>` (6-channel WAV; renders ~10× real time),

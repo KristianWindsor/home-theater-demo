@@ -1,15 +1,11 @@
 {
-  "_comment": "Play the showcase (click the TV in the room): a few minutes of everything, in order. A step is a show (\"show\": its id, playing \"from\"/\"to\" seconds), a stretch of a film or a cinema demo (\"movie\" / \"trailer\": the file, \"start\"/\"end\"; no end plays to the end), or a stretch of a song (\"song\": the file, \"start\"/\"end\"), in the visualizer or, with \"video\": true, its music video. \"or\" lists stand-ins for a step whose file isn't in the library; a step with nothing available is skipped. \"title\" and \"line\" are its caption. The finale card closes it.",
+  "_comment": "Play the showcase (click the TV in the room): a few minutes of everything, in order, starting with a sound check. A step is a show (\"show\": its id, playing \"from\"/\"to\" seconds), a stretch of a film or a cinema demo (\"movie\" / \"trailer\": the file, \"start\"/\"end\"; no end plays to the end), or a stretch of a song (\"song\": the file, \"start\"/\"end\"), in the visualizer or, with \"video\": true, its music video. \"or\" lists stand-ins for a step whose file isn't in the library; a step with nothing available is skipped. \"title\" and \"line\" are its caption. The finale card closes it.",
   "title": "Play the showcase",
   "steps": [
-    { "show": "room-wakes-up", "to": 44, "title": "Awakening", "line": "The room wakes up · a KW5.1 Original" },
+    { "show": "room-wakes-up", "to": 54, "title": "Sound check", "line": "Awakening · a marble on every speaker, named as it comes in" },
     { "trailer": "Dolby/Amaze.mp4", "title": "Dolby Atmos: Amaze", "line": "The trailer before the film" },
-    { "movie": "Star Wars Episode I - The Phantom Menace (1999).mp4", "start": "0:58:56", "end": "1:01:50", "title": "Star Wars: Episode I", "line": "The Boonta Eve podrace",
-      "or": [
-        { "show": "cold-start", "from": 0, "to": 75, "title": "Cold Start", "line": "A V10 wakes up · a KW5.1 Original" }
-      ] },
-    { "song": "Mannheim_Steamroller_-_A_Fresh_Aire_Christmas_-_10_-_Carol_Of_The_Bells.flac", "start": 0, "end": 52.07, "title": "Carol of the Bells", "line": "Mannheim Steamroller · choreographed by the visualizer" },
-    { "show": "the-passenger", "to": 62, "title": "The Passenger", "line": "A cat takes the empty seat · a KW5.1 Original" }
+    { "movie": "Star Wars Episode I - The Phantom Menace (1999).mp4", "start": "0:58:56", "end": "1:01:50", "title": "Star Wars: Episode I", "line": "The Boonta Eve podrace" },
+    { "song": "Mannheim_Steamroller_-_A_Fresh_Aire_Christmas_-_10_-_Carol_Of_The_Bells.flac", "start": 0, "end": 52.07, "title": "Carol of the Bells", "line": "Mannheim Steamroller · choreographed by the visualizer" }
   ],
   "finale": { "title": "KW5.1", "line": "A Windsor home theater showcase", "thanks": "Thanks for watching" }
 }

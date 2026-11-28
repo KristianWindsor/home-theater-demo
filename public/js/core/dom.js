@@ -47,7 +47,6 @@ const P = {
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   wave: '<path d="M2 12h2l2-6 3 12 3-15 3 18 3-12 2 3h2"/>',
   orbit: '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4.5"/><circle cx="21" cy="11" r="1.4" fill="currentColor"/>',
-  storm: '<path d="M7 15a4.5 4.5 0 01-.6-9 6 6 0 0111.5 1.5A3.8 3.8 0 0117.5 15"/><path d="M12 13l-2 4h3l-2 4"/>',
   sub: '<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
@@ -57,13 +56,6 @@ const P = {
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   // experiences (drawn large on their cards)
   'xp-room-wakes-up': '<path d="M3 20h18"/><rect x="7" y="6" width="10" height="6" rx="0.6"/><path d="M4 18v-6M20 18v-6M6.5 19v-2.5M17.5 19v-2.5"/><circle cx="12" cy="9" r="7.5" stroke-dasharray="1.2 2.2"/><path d="M9.5 17h5"/>',
-  'xp-glass-orchard': '<path d="M12 21v-7M12 14c0-3-3-4-5-7M12 14c0-2 3-3 4-6M12 17c2-1 4-1 6-3M9 10l-3 1M14.5 10.5l2.5-3"/><circle cx="6.5" cy="6.5" r="1.4"/><circle cx="17.5" cy="7" r="1.4"/><circle cx="18.5" cy="13.5" r="1.1"/><path d="M4 21h16" stroke-dasharray="1 2"/>',
-  'xp-beneath-the-ice': '<path d="M2 7h20"/><path d="M17 7l-3 4 1 3-4 3-2 4M14 11l3 2M11 17l-3-1"/><path d="M3 16c3 2 6 3 9 2.5s5-1.5 7-1" stroke-dasharray="1.5 2"/><circle cx="6" cy="10" r="0.6"/><circle cx="9" cy="12.5" r="0.5"/>',
-  'xp-last-lighthouse': '<path d="M10 20l1-11h2l1 11M9.5 9h5M11 6.5h2V9h-2zM12 5v1.5"/><path d="M13.5 7.5L22 4M10.5 7.5L2 4" stroke-dasharray="1.2 1.6"/><path d="M2 20c2-1 3 1 5 0s3 1 5 0 3 1 5 0 3 1 5 0"/><circle cx="20" cy="15" r="0.7"/>',
-  'xp-marble-eventually': '<circle cx="6" cy="5" r="1.6"/><path d="M3 9l9 3M21 11l-8 4M4 18l8 1.5M14 19.5h6"/><path d="M17 3v5M15.5 8h3" /><circle cx="17" cy="9.6" r="1.3"/><path d="M8 13l.8 3.5"/>',
-  'xp-cold-start': '<path d="M4.6 17.5a8 8 0 1114.8 0"/><path d="M12 6.2v1.6M7.3 8.4l1.1 1.1M16.7 8.4l-1.1 1.1M5.3 12.9h1.6M17.1 12.9h1.6"/><path d="M12 15.2l4.2-4"/><circle cx="12" cy="15.2" r="1.1"/><path d="M8.5 20.5h7"/>',
-  'xp-the-passenger': '<path d="M4.5 20c0-5 3.3-8.3 7.5-8.3s7.5 3.3 7.5 8.3z"/><circle cx="12" cy="8.6" r="3.1"/><path d="M9.5 6.9L9.1 4.3l2.1 1.5M14.5 6.9l.4-2.6-2.1 1.5"/><path d="M19.5 20c1.6-.4 2.2-2.1 1.2-3.6"/><path d="M10.6 8.8h.01M13.4 8.8h.01"/>',
-  'xp-purr-rev': '<circle cx="12" cy="13" r="7.5"/><path d="M12 13l3.5-3.5M8 7.5l.5 1M16 7.5l-.5 1"/><path d="M9 4.8L8.4 2.6l1.9 1.1M15 4.8l.6-2.2-1.9 1.1"/>',
 };
 
 /** Phones and tablets (no mouse): touch wording, tap-to-reveal controls, no 5.1 advice. */

@@ -1,6 +1,7 @@
 // Home: the 3D theater. Click the TV to play the showcase, speakers to hear them alone, the couch to sit. The
-// pages are a row below; Settings is the gear in the corner, beside what the speakers are getting. Room shows play here, with their transport in a pill at the top; the music's
-// transport is the Now Playing bar (core/nowplaying.js).
+// pages are a row below (Sound Check first); Settings is the gear in the corner, beside what
+// the speakers are getting. Room shows play here, with their transport in a pill at the top and their speaker
+// callouts over the speakers; the music's transport is the Now Playing bar (core/nowplaying.js).
 import { h, icon, TOUCH_ONLY } from '../core/dom.js';
 import { ctx } from '../core/context.js';
 import { focusFirst } from '../core/nav.js';
@@ -18,8 +19,9 @@ export function home(root) {
   const go = (path) => () => app.router.go(path);
   const dockItem = (path, ic, label, auto) => h('button', { class: 'dock-item', onclick: go(path), 'data-autofocus': auto || null, 'data-key': `dock:${path}` },
     icon(ic), h('span', {}, label));
+  // the sound check comes first: it's what you do first
   const dock = h('nav', { class: 'dock', 'aria-label': 'Explore' },
-    dockItem('/demos', 'surround', 'Original Shows', true),
+    dockItem('/soundcheck', 'volume', 'Sound Check', true),
     dockItem('/trailers', 'ticket', 'Cinema Demos'),
     dockItem('/movies', 'film', 'Movie Scenes'),
     dockItem('/music', 'music', 'Music'),
@@ -39,6 +41,7 @@ export function home(root) {
   const corner = h('div', { class: 'home-corner' }, outChip,
     h('button', { class: 'btn btn-icon gear', onclick: go('/settings'), 'aria-label': 'Settings', 'data-key': 'dock:/settings' }, icon('settings')));
   const xpPill = h('div', { class: 'xp-pill' });
+  const calloutLayer = h('div', { class: 'callouts' });
   const el = h('div', { class: 'screen home' },
     h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'KW5.1'),
       h('div', { class: 'room-name' }, 'A Windsor home theater showcase')),
@@ -46,10 +49,15 @@ export function home(root) {
     h('div', { class: 'room-hint' }, TOUCH_ONLY
       ? ['Tap the TV to play the showcase', h('br'), 'Tap a speaker to hear it alone · the couch to sit']
       : ['Click the TV to play the showcase', h('br'), 'Click a speaker to hear it alone · the couch to sit', h('br'), 'Drag to look around']),
-    tag, banner, dock, xpPill,
+    tag, calloutLayer, banner, dock, xpPill,
   );
   root.appendChild(el);
   focusFirst(el);
+  const calloutEls = new Map(); // a room show's speaker callouts on screen: callout -> its element (see drawCallouts)
+  const clearCallouts = () => {
+    for (const e of calloutEls.values()) e.remove();
+    calloutEls.clear();
+  };
 
   // room experiences ("Awakening") take over this screen: the interface fades out and back in on cue. Their
   // transport (pause, chapters, restart, a seekable timeline) is a pill that shows when the mouse moves or a key is
@@ -80,6 +88,7 @@ export function home(root) {
     if (!run || run.kind !== 'room') {
       immersive(false);
       xpPill.classList.remove('on');
+      clearCallouts();
       tp = null;
       return;
     }
@@ -112,6 +121,45 @@ export function home(root) {
     clearTimeout(pillTimer);
     for (const ev of ['pointermove', 'pointerdown']) document.removeEventListener(ev, showPill, true);
   });
+
+  // a room show's callouts (Awakening names each speaker as it comes in): a label over that speaker on the show's
+  // clock, so a pause holds it and a jump back shows it again. They stay up while the rest of the interface is hidden.
+  const drawCallouts = (room) => {
+    const run = app.experience;
+    const list = run && run.kind === 'room' && run.score ? run.score.callouts : null;
+    const t = run ? run.t || 0 : 0;
+    const live = new Set();
+    if (list && list.length && settings.roomLabels) {
+      for (const c of list) {
+        if (t < c.t || t >= c.t + c.dur) continue;
+        const id = room.idForRole(c.role);
+        const a0 = id && anchor(id);
+        if (!a0) continue;
+        // above where the show's marbles bounce (the sub's ball goes higher)
+        const a = [a0[0], a0[1] + (c.role === 'LFE' ? 1.0 : 0.5), a0[2]];
+        live.add(c);
+        let box = calloutEls.get(c);
+        if (!box) {
+          // on a stereo output the surrounds, the center and the sub are simulated: say so, it's a sound check
+          const virt = app.engine.ready && app.engine.channelOf(c.role) < 0;
+          box = h('div', { class: 'room-callout' }, h('span', { class: 'name' }, room.speakers[id].label),
+            h('span', { class: 'sub' }, virt ? `${c.text} · simulated on ${app.engine.layoutName}` : c.text));
+          calloutLayer.appendChild(box);
+          calloutEls.set(c, box);
+        }
+        const p = room.project(a, window.innerWidth, window.innerHeight);
+        box.style.left = `${p.x}px`;
+        box.style.top = `${p.y}px`;
+        box.style.opacity = p.visible ? Math.max(0, Math.min(1, (t - c.t) / 0.25, (c.t + c.dur - t) / 0.4)) : 0;
+      }
+    }
+    for (const [c, box] of calloutEls) {
+      if (live.has(c)) continue;
+      box.remove();
+      calloutEls.delete(c);
+    }
+  };
+  unsubs.push(app.on('roomframe', drawCallouts));
 
   // floating label over hovered / clicked objects
   let tagFor = null, tagUntil = 0, tagText = null;

@@ -3,11 +3,17 @@
 //   A  0:00  a wooden tick behind-left, an answer front-right; the conversation finds a tempo
 //   B  0:11  each tower introduces itself (FL plucked wire, FR bowed glass, SR music box, SL breath),
 //            then they pass the theme around the couch, faster and faster
-//   C  0:27  everyone agrees on a groove; threads of light join the speakers; the center hums, the sub pulses
-//   D  0:45  the walls slide away, the front wall parts, the ceiling opens; the reverb grows with the room
-//   E  1:04  the full passage: the theme circles the room; a deep B-flat as the largest ring locks in;
-//            everything resolves into one luminous D chord
-//   F  1:25  the room folds back, the interface returns... and one last tick behind your left shoulder
+//   C  0:27  everyone agrees on a groove, the sub's line under it; threads of light join the speakers; the center
+//            hums (it's the sound check: each speaker is named on screen as it introduces itself, see the callouts)
+//      0:35  the sub's big moment, Amaze-style: a bar of build, one beat of held breath, then the drop at 0:37 (low D,
+//            37 Hz, as loud as the LFE channel goes for two seconds, then a long rumbling tail); the line drives on
+//   D  0:45  one luminous D chord from everything: the ceiling swings open, the walls slide out and sink into the
+//            ground, the room is a floor under the stars, the threads become rings spinning over the couch
+//   F  0:52  the rings fold back into the TV, the room closes, the interface returns... and at 0:57 one last tick
+//            behind your left shoulder. One minute in all.
+//
+// Every note also lands a marble on the speaker that plays it (scene: marbles.js), and the TV shows a metronome and
+// the notes to come (tv.js), both read from these events.
 import { Score, Tempo, Curve, note } from '../core/timeline.js';
 
 export const SPK = ['FL', 'FR', 'SR', 'SL']; // clockwise around the couch, starting front-left
@@ -44,7 +50,7 @@ const THEME2 = [[0, 78, 1], [1, 76, 0.5], [1.5, 74, 0.5], [2, 69, 1], [3, 74, 0.
   [4, 78, 1], [5, 81, 1], [6, 83, 1], [7, 81, 0.5], [7.5, 78, 0.5]];
 
 export function compose() {
-  const s = new Score({ duration: 101, bpm: 90, seed: 2026 });
+  const s = new Score({ duration: 60, bpm: 90, seed: 2026 });
   const T = s.tempo; // T.t(bar, beat)
   const B = T.beat;
   const rng = s.rng;
@@ -53,23 +59,22 @@ export function compose() {
   s.chapter(0, 'A tick');
   s.chapter(T.t(4), 'Introductions');
   s.chapter(T.t(8), 'Around the couch');
+  // the chord comes straight after the groove; the fold, the interface and the last tick follow it
+  const tc = T.t(17), tFold = tc + 7.2, tLast = 57.4;
   s.chapter(T.t(10), 'The groove');
-  s.chapter(T.t(17), 'The walls');
-  s.chapter(T.t(24), 'The instrument');
-  s.chapter(T.t(31), 'One chord');
-  s.chapter(T.t(32.5), 'Folding back');
+  s.chapter(T.t(13), 'The drop');
+  s.chapter(tc, 'One chord');
+  s.chapter(tFold, 'Folding back');
   s.mark('B', T.t(4));
   s.mark('hocket', T.t(8));
   s.mark('C', T.t(10));
   s.mark('hum', T.t(12));
   s.mark('sub', T.t(14));
-  s.mark('D', T.t(17));
-  s.mark('E', T.t(24));
-  s.mark('bass', T.t(30));
-  s.mark('chord', T.t(31));
-  s.mark('F', T.t(32));
-  s.mark('chrome', 92.4);
-  s.mark('lastTick', 98.2);
+  s.mark('D', tc); // the room opens with the chord
+  s.mark('chord', tc);
+  s.mark('F', tFold);
+  s.mark('chrome', tFold + 3.3);
+  s.mark('lastTick', tLast);
 
   // ------------------------------------------------------------ A: the ticks find each other
   const tick = (t, spk, vel = 0.6, extra = {}) => add(t, 'tick', { spk, n: spk === 'SL' ? N('D6') : spk === 'FR' ? N('A6') : spk === 'FL' ? N('E6') : N('F#6'), vel, ...extra });
@@ -96,6 +101,11 @@ export function compose() {
   add(T.t(5, 3), 'glass', { spk: 'FR', n: 76, dur: 2.6 * B, vel: 0.6, intro: true });
   for (const [b, n, d] of part1) add(T.t(6, b), 'box', { spk: 'SR', n: n + 12, dur: d * B, vel: 0.62, intro: true });
   for (const [b, n, d] of part2) add(T.t(7, b - 4), 'air', { spk: 'SL', n, dur: (d + (b === 7 ? 1.2 : 0.1)) * B, vel: 0.66, intro: true });
+  // it's the sound check: each speaker is named as it introduces itself (the center and the sub join in the groove)
+  s.callout(T.t(4), 'FL', 'plucked strings', T.bar * 0.94);
+  s.callout(T.t(5), 'FR', 'bowed glass', T.bar * 0.94);
+  s.callout(T.t(6), 'SR', 'music box', T.bar * 0.94);
+  s.callout(T.t(7), 'SL', 'breath', T.bar * 0.94);
 
   // ------------------------------------------------------------ B: the theme passes around the couch (bars 8-9)
   const hocket = [
@@ -127,8 +137,33 @@ export function compose() {
       add(T.t(bar), 'hum', { spk: 'C', n: ch.bass + 12 + (ch.bass < 33 ? 12 : 0), dur: T.bar * 1.02, vel: 0.5 + 0.06 * (bar - 12) });
       add(T.t(bar), 'hum', { spk: 'C', n: ch.bass + 19 + (ch.bass < 33 ? 12 : 0), dur: T.bar * 1.02, vel: 0.35 + 0.04 * (bar - 12) });
     }
-    if (bar >= 14) for (const k of [0, 2]) add(T.t(bar, k), 'sub', { spk: 'LFE', n: ch.sub, dur: 1.1, vel: 0.55 + 0.1 * (bar - 14) + (k ? -0.08 : 0) });
   });
+  // the sub's line: in with the groove, out for the build (its ball is lifted, see marbles.js), back after the drop
+  // (which lands on bar 14) and busier into the chord. [beat, length in beats, velocity, kick on it]
+  const LINE = {
+    10: [[0, 1.2, 0.62, 1], [1.5, 0.4, 0.42], [2, 0.9, 0.55, 1]],
+    11: [[0, 1.2, 0.62, 1], [1.5, 0.4, 0.42], [2, 0.9, 0.55, 1], [3.5, 0.4, 0.4]],
+    12: [[0, 1.2, 0.66, 1], [1.5, 0.4, 0.45], [2, 0.9, 0.6, 1]],
+    14: [[2, 0.9, 0.62, 1], [3, 0.4, 0.45], [3.5, 0.4, 0.5]],
+    15: [[0, 1.2, 0.72, 1], [1.5, 0.4, 0.5], [2, 0.9, 0.66, 1], [3.5, 0.4, 0.5]],
+    16: [[0, 1.2, 0.75, 1], [1.5, 0.4, 0.52], [2, 0.9, 0.7, 1], [3, 0.4, 0.55], [3.5, 0.4, 0.6]],
+  };
+  progC.forEach((name, i) => {
+    for (const [b, len, vel, kick] of LINE[10 + i] || []) add(T.t(10 + i, b), 'sub', { spk: 'LFE', n: CH[name].sub, dur: len * B, vel, kick: !!kick });
+  });
+  s.callout(T.t(10), 'LFE', 'the bass line', T.bar * 1.2);
+  s.callout(T.t(12), 'FC', 'hum', T.bar * 1.3);
+  s.callout(T.t(14), 'LFE', 'low D, 37 Hz', T.bar * 1.3);
+
+  // ------------------------------------------------------------ the sub's drop (bar 14)
+  // a bar of build (a tone climbing in the sub, air rising all around), one beat of held breath where the groove
+  // stops, then the heavy ball lands on the subwoofer with everything it has (audio.js: riser, drop)
+  const tBuild = T.t(13), tBreath = T.t(13, 3), tDrop = T.t(14);
+  s.mark('build', tBuild);
+  s.mark('breath', tBreath);
+  s.mark('drop', tDrop);
+  add(tBuild, 'riser', { spk: 'LFE', dur: tBreath - tBuild, vel: 0.8 });
+  add(tDrop, 'drop', { spk: 'LFE', n: 26, dur: 9, vel: 1 });
   // the breath melody (SL)
   for (const [b, n, d] of THEME) add(T.t(12, b), 'air', { spk: 'SL', n, dur: d * B * 0.95, vel: 0.6, melody: true });
   for (const [b, n, d] of THEME2) add(T.t(14, b), 'air', { spk: 'SL', n, dur: d * B * 0.95, vel: 0.64, melody: true });
@@ -136,74 +171,7 @@ export function compose() {
   add(T.t(16, 2), 'air', { spk: 'SL', n: 86, dur: 6 * B, vel: 0.66, melody: true });
   add(T.t(16, 2.5), 'swell', { pos: { az: 0, width: 360 }, dur: 1.4 * B + 0.4, vel: 0.5 });
 
-  // ------------------------------------------------------------ D: the walls (bars 17-23)
-  const progD = [['DaddA', 0, 4], ['Gmaj7s11', 0, 4], ['Em9', 0, 4], ['Bmadd9', 0, 4], ['Gmaj9', 0, 4], ['Fsm7', 0, 4], ['Em9', 0, 2], ['A13sus', 2, 2]];
-  let barD = 17;
-  for (const [name, b0, beats] of progD) {
-    const ch = CH[name];
-    const t = T.t(barD, b0);
-    s.add({ t, inst: 'chord', name, dur: beats * B, bass: ch.bass, pad: ch.pad, hall: true });
-    if (beats === 4) {
-      ch.pad.slice(-4).forEach((n, k) => add(T.t(barD, k), 'pluck', { spk: 'FL', n: n + 24, dur: B * 1.5, vel: 0.36, arp: true, slow: true }));
-      add(t, 'glass', { spk: 'FR', n: ch.pad[ch.pad.length - 1] + 12, dur: beats * B, vel: 0.42 });
-    }
-    add(t, 'sub', { spk: 'LFE', n: ch.bass - 12 < 22 ? ch.bass : ch.bass - 12, dur: beats * B * 0.8, vel: 0.35, swell: true });
-    if (b0 + beats >= 4) barD++;
-  }
-  const melD = [[17, 0, 86, 4], [18, 0, 85, 2], [18, 2, 81, 2], [19, 0, 83, 4], [20, 0, 78, 2], [20, 2, 81, 2], [21, 0, 83, 2], [21, 2, 86, 2], [22, 0, 85, 4], [23, 0, 83, 2], [23, 2, 81, 2]];
-  for (const [bar, b, n, d] of melD) add(T.t(bar, b), 'air', { spk: 'SL', n, dur: d * B * 0.98, vel: 0.5, melody: true, hall: true });
-  // stars: music-box sparkles from everywhere as the ceiling opens
-  for (let i = 0; i < 70; i++) {
-    const t = T.t(19) + rng.range(0, T.t(24) - T.t(19)) * Math.pow(rng.next(), 0.7);
-    const pool = [74, 76, 78, 81, 83, 85, 86, 88, 90, 93];
-    add(t, 'star', { pos: { az: rng.range(-180, 180), dist: rng.range(1.2, 3) }, n: rng.pick(pool) + 12, vel: rng.range(0.15, 0.4) });
-  }
-  // the walls: the sounds of the architecture moving (also drives the picture, see room())
-  add(T.t(17), 'wall', { which: 'sides', dur: 5.2, pos: { az: -90 }, n: 38, vel: 0.7 });
-  add(T.t(17), 'wall', { which: 'sides', dur: 5.2, pos: { az: 90 }, n: 45, vel: 0.7 });
-  add(T.t(18.5), 'wall', { which: 'front', dur: 4.6, pos: { az: 0 }, n: 33, vel: 0.8 });
-  add(T.t(19.5), 'wall', { which: 'back', dur: 4.6, pos: { az: 180 }, n: 40, vel: 0.65 });
-  add(T.t(20.5), 'rise', { dur: 6.5, vel: 0.6 });
-  add(T.t(21.5), 'ceiling', { dur: 5.5, vel: 0.6 });
-  add(T.t(23, 2), 'swell', { pos: { az: 0, width: 360 }, dur: 2 * B + 0.3, vel: 0.6 });
-
-  // ------------------------------------------------------------ E: the instrument (bars 24-30)
-  const progE = [['D', 0, 4], ['AoverCs', 0, 4], ['Bm7', 0, 4], ['Gadd9', 0, 4], ['DoverFs', 0, 4], ['Gmaj7', 0, 2], ['A7sus', 2, 2], ['Bbadd9', 0, 4]];
-  let barE = 24;
-  for (const [name, b0, beats] of progE) {
-    const ch = CH[name];
-    const t = T.t(barE, b0);
-    const big = name === 'Bbadd9';
-    s.add({ t, inst: 'chord', name, dur: beats * B, bass: ch.bass, pad: ch.pad, hall: true, big });
-    for (let k = b0; k < b0 + beats; k++) {
-      if (!big) tick(T.t(barE, k), k % 2 ? 'FR' : 'SL', k === 0 ? 0.58 : 0.46, { groove: true, hall: true });
-      add(T.t(barE, k + 0.5), 'click', { spk: 'SR', vel: 0.3 });
-    }
-    const arp = ch.arp || CH.D.arp;
-    for (let k = b0 * 2; k < (b0 + beats) * 2; k++) add(T.t(barE, k * 0.5), 'pluck', { spk: 'FL', n: arp[k % 8], dur: 0.5 * B, vel: k % 2 ? 0.45 : 0.58, arp: true });
-    add(t, 'glass', { spk: 'FR', n: ch.pad[ch.pad.length - 1] + 12, dur: beats * B * 0.95, vel: 0.48 });
-    add(t, 'hum', { spk: 'C', n: ch.bass + 12 + (ch.bass < 33 ? 12 : 0), dur: beats * B * 1.02, vel: 0.62 });
-    add(t, 'hum', { spk: 'C', n: ch.bass + 19 + (ch.bass < 33 ? 12 : 0), dur: beats * B * 1.02, vel: 0.45 });
-    if (!big) {
-      for (let k = b0; k < b0 + beats; k += 2) add(T.t(barE, k), 'sub', { spk: 'LFE', n: ch.sub, dur: 1.2, vel: 0.75 });
-      if (b0 === 0) add(t, 'bell', { pos: { az: rng.range(-25, 25), dist: 5 }, n: ch.bass + 24, vel: 0.5, ring: barE - 24 });
-    }
-    if (b0 + beats >= 4) barE++;
-  }
-  // the theme circles the room: each note from the next tower, clockwise
-  const melE = [...THEME.map(([b, n, d]) => [24, b, n, d]), ...THEME2.map(([b, n, d]) => [26, b, n, d]),
-    [28, 0, 81, 1], [28, 1, 83, 1], [28, 2, 85, 1], [28, 3, 86, 1], [29, 0, 88, 2], [29, 2, 86, 1], [29, 3, 85, 1], [30, 0, 86, 4]];
-  melE.forEach(([bar, b, n, d], i) => {
-    const spk = SPK[i % 4];
-    add(T.t(bar, b), 'lead', { spk, n, dur: d * B * 1.05, vel: 0.62 + (bar >= 28 ? 0.08 : 0), from: SPK[(i + 3) % 4], to: spk, hall: true });
-  });
-  // the deep B-flat: the largest ring moves into place
-  add(T.t(30), 'deep', { n: 34, dur: 2.67 * 1.15, vel: 0.95 });
-  add(T.t(30, 2), 'swell', { pos: { az: 0, width: 360 }, dur: 2 * B + 0.2, vel: 0.75 });
-  for (let k = 0; k < 8; k++) add(T.t(30, 2 + k * 0.25), 'box', { spk: SPK[k % 4], n: [70, 74, 77, 81, 82, 86, 89, 93][k], dur: 0.4, vel: 0.35 + k * 0.03, short: true, from: SPK[(k + 3) % 4], to: SPK[k % 4] });
-
-  // ------------------------------------------------------------ the luminous chord (bar 31)
-  const tc = T.t(31);
+  // ------------------------------------------------------------ the luminous chord (bar 17)
   add(tc, 'resolve', { dur: 9.5, vel: 1, pad: CH.D69.pad });
   // a strum from front-left, then the same chord answered by every tower
   [50, 57, 62, 66, 69, 76, 81].forEach((n, k) => add(tc + k * 0.035, 'pluck', { spk: 'FL', n, dur: 6, vel: 0.7, strum: true }));
@@ -219,25 +187,35 @@ export function compose() {
   }
 
   // ------------------------------------------------------------ F: folding back, and one more tick
-  add(T.t(32.6), 'wall', { which: 'return', dur: 5, pos: { az: 0, width: 300 }, n: 38, vel: 0.45, reverse: true });
-  tick(98.2, 'SL', 0.72, { last: true, dry: true });
+  add(tFold, 'wall', { which: 'return', dur: 3.4, pos: { az: 0, width: 300 }, n: 38, vel: 0.4, reverse: true });
+  tick(tLast, 'SL', 0.72, { last: true, dry: true });
+
+  // the held breath before the drop: nothing starts in it, and what's ringing is cut short at it
+  const held = ['tick', 'click', 'pluck', 'glass', 'box', 'air', 'hum'];
+  s.events = s.events.filter((e) => !(held.includes(e.inst) && e.t >= tBreath && e.t < tDrop));
+  for (const e of s.events) if (held.includes(e.inst) && e.dur && e.t < tBreath && e.t + e.dur > tBreath) e.dur = tBreath - e.t;
 
   s.done();
 
   // ------------------------------------------------------------ the room's shape over time (sound + picture)
   const ease = 'inOut3';
+  // the chord swings the ceiling open, then the walls slide out and sink into the ground (the TV and the furniture stay):
+  // the room becomes a floor under the stars. At the fold it all comes back the other way.
+  const o0 = tc - 0.05, c0 = tFold, c1 = tFold + 3.4;
+  const out = (v, t0, t1) => new Curve([[0, 0], [t0, 0], [t1, v, ease], [c0 + (t0 - o0) * 0.5, v], [c1 - (t1 - o0 - 2.6) * 0.5, 0, ease]]);
   const c = {
-    sides: new Curve([[0, 0], [T.t(17), 0], [T.t(17) + 5.2, 13, ease], [T.t(32.6) + 1.5, 13], [T.t(32.6) + 6, 0, ease]]),
-    split: new Curve([[0, 0], [T.t(18.5), 0], [T.t(18.5) + 4.6, 12.5, ease], [T.t(32.6) + 1.5, 12.5], [T.t(32.6) + 6, 0, ease]]),
-    front: new Curve([[0, 0], [T.t(18.5), 0], [T.t(18.5) + 4.6, 5, ease], [T.t(32.6) + 1.5, 5], [T.t(32.6) + 6, 0, ease]]),
-    back: new Curve([[0, 0], [T.t(19.5), 0], [T.t(19.5) + 4.6, 12, ease], [T.t(32.6) + 1.5, 12], [T.t(32.6) + 6, 0, ease]]),
-    height: new Curve([[0, 1], [T.t(20.5), 1], [T.t(20.5) + 6.5, 4.6, ease], [T.t(32.6), 4.6], [T.t(32.6) + 4.5, 1, ease]]),
-    open: new Curve([[0, 0], [T.t(21.5), 0], [T.t(21.5) + 5.5, 1, ease], [T.t(32.3), 1], [T.t(32.3) + 3.5, 0, ease]]),
-    ground: new Curve([[0, 0], [T.t(17), 0], [T.t(17) + 4, 1], [T.t(32.6) + 5, 1], [T.t(32.6) + 7, 0]]),
+    open: out(1, o0, o0 + 1.3),
+    sides: out(3.5, o0 + 0.2, o0 + 2.6),
+    back: out(3.5, o0 + 0.2, o0 + 2.6),
+    split: out(2.5, o0 + 0.2, o0 + 2.6),
+    front: out(1.2, o0 + 0.2, o0 + 2.6),
+    sink: out(1, o0 + 0.4, o0 + 3.0),
+    height: new Curve([[0, 1]]),
+    ground: new Curve([[0, 0], [o0, 0], [o0 + 0.8, 1], [c1, 1], [c1 + 0.3, 0]]),
   };
   s.room = (t) => ({
     left: c.sides.at(t), right: c.sides.at(t), split: c.split.at(t), front: c.front.at(t), back: c.back.at(t),
-    height: c.height.at(t), open: c.open.at(t), ground: c.ground.at(t), ceiling: 1,
+    height: c.height.at(t), open: c.open.at(t), sink: c.sink.at(t), ground: c.ground.at(t), ceiling: 1,
   });
   s.curves = c;
   s.T = T;

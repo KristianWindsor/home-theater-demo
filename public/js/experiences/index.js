@@ -2,65 +2,18 @@
 //   score.js  the shared timeline (notes, positions, cues) - read by both the audio and the picture
 //   audio.js  how the score sounds (rendered offline in a worker, streamed to the speakers)
 //   scene.js  how it looks (WebGL) and what the lights do
-// Pure data here so Node (scripts/render_experience.mjs) can import it too.
+// Pure data here so Node (scripts/render_experience.mjs) can import it too. The listed ones are on the Sound Check
+// page: `check` is what each one checks, `listen` what to listen for. They play in the 3D room (`kind: 'room'`).
 
 export const EXPERIENCES = [
   {
     id: 'room-wakes-up',
     title: 'Awakening',
+    check: 'Every speaker',
     tagline: 'One tick, then the whole room joins in',
-    duration: 101,
+    listen: 'Each speaker gets a marble that bounces on every note it plays, named as it comes in, and the sub’s lands with a full-power 37 Hz drop',
+    duration: 60,
     kind: 'room',
-  },
-  {
-    id: 'glass-orchard',
-    title: 'Glass Orchard',
-    tagline: 'A glass tree, grown note by note',
-    duration: 154,
-    kind: 'stage',
-  },
-  {
-    id: 'beneath-the-ice',
-    title: 'Under the Ice',
-    tagline: 'Something huge moves under a frozen lake',
-    duration: 128,
-    kind: 'stage',
-  },
-  {
-    id: 'last-lighthouse',
-    title: 'Lighthouse',
-    tagline: 'A signal across a dark sea, then an answer',
-    duration: 132,
-    kind: 'stage',
-  },
-  {
-    id: 'marble-eventually',
-    title: 'Marble Machine',
-    tagline: 'One marble sets off a room-sized machine',
-    duration: 104,
-    kind: 'stage',
-  },
-  {
-    id: 'cold-start',
-    title: 'Cold Start',
-    tagline: 'A V10 wakes up, then takes the night',
-    duration: 150,
-    kind: 'stage',
-  },
-  {
-    id: 'the-passenger',
-    title: 'The Passenger',
-    tagline: 'A cat takes the empty seat, and dreams',
-    duration: 101,
-    kind: 'room',
-  },
-  {
-    id: 'purr-rev',
-    title: 'Purr / Rev',
-    tagline: 'A purr that becomes an engine, and back',
-    duration: 40,
-    kind: 'room',
-    hidden: true, // an easter egg: click the sleeping cat in The Passenger
   },
 ];
 

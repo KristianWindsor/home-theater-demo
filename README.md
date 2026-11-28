@@ -5,16 +5,21 @@
 - **3D home screen**: a model of the room (couch, four towers, center, the subwoofer, the TV, the Hue
   lights). Click the TV to **play the showcase**. Click a speaker and a sound
   plays from **only that speaker**; click the sub for a sub drop; click the couch to sit down. Speakers move and
-  lights glow with the actual output levels. The rest is a smaller row below, Settings is the gear in the corner,
-  beside a chip that says what the speakers are getting (and leads to speaker setup).
-- **The showcase**: about seven minutes of everything, in order (`config/showcase.json`): a show in the room,
-  a cinema trailer, two stretches of films, a music video, a song in the visualizer, another show, then a closing
-  card. See [The showcase](#the-showcase).
-- **Original Shows**: seven composed surround experiences, each a *KW5.1 Original*, where the music, where each
-  sound sits in the room, the picture and the lights all come from one score, plus a helicopter orbiting the
-  couch and a thunderstorm with lightning in the lights. Each card has a still from the show. The shows have a
-  real transport: pause, restart, previous/next chapter, and a timeline you can click or drag along ("wait, play
-  that part again"). See [Experiences](#experiences).
+  lights glow with the actual output levels. The rest is a smaller row below (Sound Check first), Settings is the
+  gear in the corner, beside a chip that says what the speakers are getting (and leads to speaker setup).
+- **The showcase**: a few minutes of everything, in order (`config/showcase.json`): a sound check in the room,
+  a cinema trailer, a stretch of a film, a song in the visualizer, then a closing card. See
+  [The showcase](#the-showcase).
+- **Sound Check**: is every speaker playing, and from the right place? It leads with *Awakening*, a sound check
+  composed as music: each speaker plays its own part, with a marble that bounces on it for every note it plays,
+  and is named over it in the 3D room as it comes in; a metronome on the TV keeps time and shows the notes to come.
+  The subwoofer comes in with the groove, playing a bass line, and gets a drop built like the bass section of Dolby's
+  *Amaze*: a bar of build, a beat of silence, then low D (37 Hz) as loud as the LFE channel goes. Then the whole
+  room plays one chord as the walls sink away under the stars. Then three quick tests: *Channel Check* (pink noise,
+  speaker by speaker), *Subwoofer Sweep* (bass) and *Orbit* (panning). Everything plays in the room, which lights
+  each speaker as it sounds, and the page says up front whether the browser is sending real 5.1 or simulating it.
+  Awakening has a real transport: pause,
+  restart, previous/next chapter, a timeline you can click or drag along. See [Sound check](#sound-check).
 - **Cinema Demos**: the Dolby, DTS and THX trailers that play before a film in the cinema, one section per
   brand. *Play all* runs them back to back.
 - **Movie Scenes**: MKV/MP4 library with **curated scene lists** you jump straight to, one row of scenes per film,
@@ -154,52 +159,55 @@ name your copy to match. If its studio logos run longer or shorter, shift the ti
 ## The showcase
 
 A click on the TV in the room plays the showcase, `config/showcase.json`: a short evening in the theater with a
-beginning and an end. Out of the box: *Awakening* (one tick, then the whole room joins in), Dolby's *Amaze*
-trailer, the Batpod and the truck flip from The Dark Knight, the seismic charges in the asteroid field from
-Attack of the Clones, the break and drop of Animal Collective's *My Girls* with its music video, the drop in
-Mannheim Steamroller's *Carol of the Bells* in the visualizer, *The Passenger* (a cat takes the empty seat), then
-a closing card. The film and song stretches are a minute or so each. A chip at the top shows where it is, with
-*Next* and *End*; going anywhere else ends it.
+beginning and an end. It opens with the sound check, so the first thing anyone sees is every speaker named as it
+plays. Out of the box: the first 54 seconds of *Awakening* (through the subwoofer's drop and the final chord), Dolby's
+*Amaze* trailer, the start of the Boonta Eve podrace from Star Wars: Episode I, Mannheim Steamroller's *Carol of
+the Bells* from the top in the visualizer, then a closing card. A chip
+at the top shows where it is, with *Next* and *End*; going anywhere else ends it.
 
 Each step is a show (`"show": id` with `"from"`/`"to"` seconds), a stretch of a film or a cinema demo
 (`"movie"` / `"trailer"`: the file, `"start"`/`"end"`; no end plays to the end), or a stretch of a song (`"song"`:
-the file, `"start"`/`"end"`) in the visualizer, or with `"video": true` its music video. `"or"` lists stand-ins for when a file isn't in the library (a fresh install plays the
-shows instead). The TV's label in the room says how long it runs, from the steps.
+the file, `"start"`/`"end"`) in the visualizer, or with `"video": true` its music video. `"or"` lists stand-ins for
+when a file isn't in the library; a step with nothing available is skipped (a fresh install plays just the sound
+check). The TV's label in the room says how long it runs, from the steps.
 
-## Experiences
+## Sound check
 
-**Original Shows.** Each piece is one score that drives the music, the position of every sound in the
-room, the picture and the Hue lights, so they can't drift apart.
+The *Sound Check* page is for the first minute in the room: is every speaker playing, and from the right place?
+Everything on it plays in the 3D room, with each speaker lit up by its own channel's level as it sounds. At the
+top, the page says whether the browser is sending real 5.1 or simulating the surrounds and the sub in fewer
+speakers (with a way to *Set up 5.1*).
 
 | | |
 |---|---|
-| **Awakening** · 1:41 · in the 3D room | A wooden tick behind your shoulder, an answer from across the room, then each tower joins with its own instrument, a melody travels around the couch, the walls and ceiling fold away into a vast space, and it all folds back. |
-| **Glass Orchard** · 2:34 | A glass tree grown by the music: plucks grow branches, chords become membranes, the bass ripples the ground, percussion shatters fruit. A droplet falls *through* the camera mid-way. Each instrument lives in its own corner. |
-| **Under the Ice** · 2:08 | A frozen lake creaks; a fracture races from the front-right speaker to behind your left shoulder; something the size of the room passes underneath on the sub; a whale calls and is answered from around the room; the deep lights up. |
-| **Lighthouse** · 2:12 | Waves around the seats, a lighthouse signalling from the center speaker into silence. Then an answer from behind you, then many; the lights become a constellation and the horizon rises with a choir. |
-| **Marble Machine** · 1:44 | A machine drawn in light around your seat. The marble rolls off the right edge of the screen and you hear it circle behind you; every pendulum, xylophone, string, drum and glass wheel it touches keeps playing, so it composes the groove. A tube fires it over your head into a spiral around the room, it taps one tiny button, and the vast machine around the room wakes for one enormous chord. |
-| **Cold Start** · 2:30 | A dim pit garage. The tubes flicker on, a relay clicks behind your right shoulder, the fuel pump primes, the starter struggles and a V10 catches with a cold-start flare that shakes the light fittings. Two blips (pops, a bang), the roller door rises onto a night circuit, launch control at the pit exit, then the drive: shifts, rev-matched downshifts, kerbs, a tunnel at full throttle. Then you're standing by the track as it comes at you at 270 km/h, screams past and brakes behind you. Back in the garage: engine off, fans, cooling metal ticking in the silence. |
-| **The Passenger** · 1:41 · in the 3D room | A collar bell behind the couch, soft paws, a jump: a cat appears on the backrest, hops down onto the empty seat beside you, kneads, turns around twice and curls up. Its purr (felt in the subwoofer) carries it into a dream: the walls drift away and enormous strands of wool float through warm amber light. One ear twitches, the dream is gone, and it asks you a question. *(Click the sleeping cat.)* |
+| **Awakening** · 1:00 · *start here* | A sound check composed as music, with marbles (from the retired Marble Machine). A marble drops onto the surround-left tower with the first wooden tick, and ping-pongs over the couch to the front right and back as the ticks find the tempo; the TV becomes a **metronome** swinging with it, beside a lane per speaker where the notes scroll in before they play. Then each tower introduces itself with its own instrument (front left plucked strings, front right bowed glass, surround right a music box, surround left breath): its own marble drops onto it and **bounces on every note it plays**, and the speaker is **named over it**; then the theme is passed around the couch, speaker to speaker, faster and faster. The **subwoofer** comes in with the groove: its heavy ball drops onto the cabinet and bounces on every note of a bass line (big hop, little hop, big hop), with a kick under the strong beats. The center's marble rolls along the center speaker from chord to chord. Then **the subwoofer's drop**, built like the bass section of Dolby's *Amaze*: for a bar a tone climbs in the sub and air rises all around while the ball is lifted off the cabinet and hangs there glowing; the room holds its breath for one beat (everything stops and ducks) as the ball falls; then it lands, and the LFE channel gets low D (37 Hz) at about −8 dBFS RMS for two seconds (Amaze's level, peaking just under the limiter) with a long rumbling tail, a kick from every speaker, the room shaking, shockwaves across the floor and every light flashing red. After that the bass line drives on, busier, into the chord. Then everything lands on one luminous D chord: the ceiling swings open, the walls slide out and **sink into the ground**, and the room is just its floor, the couch and the speakers under a sky full of stars, with the threads of light become rings spinning over the couch; in seconds it all folds back into the TV and the walls rise again, to one last tick behind your left shoulder. |
+| **Channel Check** · 0:15 | Pink noise from each speaker in turn, named on screen: the plain, fast check. |
+| **Subwoofer Sweep** · 0:24 | A slow tone from 120 Hz down to 18 Hz: where the sub fades out, and what rattles. Start quiet. |
+| **Orbit** · 0:32 | A helicopter circles the couch: it should glide from speaker to speaker, never jump. |
 
-- **Every sound is synthesized** (plucked and bowed strings, struck glass, wood and metal, voices, waves, ice,
-  whale song, the rolling marble): no samples, nothing downloaded, nothing to license. The car is a physical
-  model of a V10 (ten cylinders firing in the real order through each bank's exhaust pipes, intake, valvetrain,
-  pops, shifts) driven by a lap simulation, heard from the cockpit or from the trackside with real propagation
-  delay (so real Doppler); the cat's purr is ~23 laryngeal pulses a second through inhale and exhale, with its
-  fundamental sent to the subwoofer. When a piece starts, a
-  background worker renders the soundtrack for *your* speaker angles from `config/room.json` (it runs several
-  times faster than real time) and streams it while it plays.
-- **Discrete 5.1.** With the OS device set to 5.1 (see above) every channel goes to its own speaker and the
-  badge in the controls says **5.1**. On stereo output it says *(folded down)* and the surrounds are mixed into
-  L/R. Move the mouse to show the controls: the speaker map lights each speaker with its own channel's level,
-  which is the quickest way to check that sound behind you really comes from behind you.
+*Awakening* is a composed piece (see [Experiences](#experiences)); the other three are synthesized live
+(`public/js/audio/demos.js`). Levels and lip sync are in Settings, a button away at the bottom of
+the page.
+
+## Experiences
+
+The composed piece, *Awakening*: one score drives the music, the position of every sound in the room, the
+marbles, the picture and the Hue lights, so they can't drift apart. More can be added the same way (see
+ARCHITECTURE.md).
+
+- **Every sound is synthesized** (plucked and bowed strings, struck glass and wood, breath, voices, the sub):
+  no samples, nothing downloaded, nothing to license. When a piece starts, a background worker renders the soundtrack for *your* speaker angles from `config/room.json` (it
+  runs several times faster than real time) and streams it while it plays.
+- **Discrete 5.1.** With the OS device set to 5.1 (see above) every channel goes to its own speaker. On stereo
+  output the surrounds are mixed into L/R, and Awakening's speaker names say *simulated*.
 - **LFE** is written 10 dB down on the LFE channel (the film convention; the receiver adds the 10 dB back).
 - **Lights**: the pieces drive the light rig (the virtual Hue lights in the 3D room) with their own cues.
-- **Levels**: *Settings → Shows level* sets all the shows (100% plays them as composed); *Speaker clicks & tests*
-  is separate, for the room's speaker clicks, Channel Check and Subwoofer Sweep.
+- **Levels**: *Settings → Sound check level* sets Awakening and Orbit (100% plays
+  them as composed); *Speaker clicks & tests* is separate, for the room's speaker clicks, Channel Check and
+  Subwoofer Sweep.
 - **Controls**: Esc/Backspace or the back button stops; the timeline shows chapters; if the TV delays the
   picture, *Settings → A/V offset* shifts the visuals.
-- **Hear a mix without the TV**: `node scripts/render_experience.mjs marble-eventually` writes exactly what the
+- **Hear a mix without the TV**: `node scripts/render_experience.mjs room-wakes-up` writes exactly what the
   app plays as a 6-channel 24-bit WAV (FL FR FC LFE SL SR) for your `room.json`; `--stereo` writes the
   fold-down, `--list` lists the pieces.
 
@@ -324,7 +332,7 @@ it), and which Hue light sits behind what. Edit it to match the real room; the s
 | Visualizer | see above |
 | Home | 1–6 speakers · C couch |
 | Showcase | Next / End in the chip at the top (arrow keys reach it) · Esc or Back ends it |
-| Shows | Space/K pause · ←/→ previous/next chapter (← once: back to this chapter's start) · J/L ±10 s · R from the start · Esc stops · any key or the mouse shows the controls |
+| Awakening | Space/K pause · ←/→ previous/next chapter (← once: back to this chapter's start) · J/L ±10 s · R from the start · Esc stops · any key or the mouse shows the controls |
 
 ## Configuration
 
@@ -409,7 +417,7 @@ public/js/
   viz/           score decoding, live analysis, director, palette, visualizer, worlds/
   room/          3D room renderer, meshes, picking
   lights/        virtual Hue light rig (+ the planned Hue sink)
-  experiences/   composed pieces: core/ (timeline, runner, stage), audio/ (DSP, instruments, studio,
+  experiences/   composed pieces: core/ (timeline, runner, speakers, gfx), audio/ (DSP, instruments, studio,
                  worker renderer) and one folder per piece (score.js, audio.js, scene.js)
   screens/       home, movies, player, demos, trailers, experience, music, visualizer, settings
 ```

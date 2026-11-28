@@ -1,13 +1,13 @@
 // The showcase (click the TV in the room): a few minutes of everything in order, from
-// config/showcase.json: shows in the room, a trailer, stretches of films, songs with their video or the visualizer,
-// then a closing card. Each step plays on its own screen (the room, the player, the visualizer, a full-screen show); a chip at
+// config/showcase.json: a sound check in the room first (Awakening, naming each speaker), a trailer, stretches of
+// films, songs with their video or the visualizer, then a closing card. Each step plays on its own screen (the room, the player, the visualizer, a full-screen show); a chip at
 // the top says where it is and offers Next and End. Going anywhere else (Back, a menu) ends it.
 import { h, icon } from './dom.js';
 import { EXPERIENCE_BY_ID } from '../experiences/index.js';
 
 const DEFAULT = {
   title: 'Play the showcase',
-  steps: [{ show: 'room-wakes-up', to: 44 }, { show: 'the-passenger', to: 62 }],
+  steps: [{ show: 'room-wakes-up', to: 54, title: 'Sound check' }],
   finale: { title: 'KW5.1', line: 'A Windsor home theater showcase', thanks: 'Thanks for watching' },
 };
 const FADE = 1.6; // seconds of fade at the end of a step that stops early
@@ -165,19 +165,16 @@ export class Showcase {
 
   async _playShow(st, token) {
     const app = this.app;
-    const route = st.def.kind === 'room' ? '/' : `/x/${st.show}`;
-    if (st.def.kind === 'room') {
-      // a room show starts its camera from the current view: bring the view back to the whole room first, so its
-      // opening shows the speakers (not the TV, the couch, a speaker or a zoom)
-      if (!app.router.current || app.router.current.path !== '/') {
-        this._go('/');
-        // wait for the home screen: a show started before it's up would navigate there again, and the second remount
-        // of home would stop the show
-        if (!(await this._until(() => app.router.current && app.router.current.path === '/', token, 30))) return;
-      }
-      if (!(await this._roomView(token))) return;
+    // shows play in the room. One starts its camera from the current view: bring the view back to the whole room
+    // first, so its opening shows the speakers (not the TV, the couch, a speaker or a zoom)
+    if (!app.router.current || app.router.current.path !== '/') {
+      this._go('/');
+      // wait for the home screen: a show started before it's up would navigate there again, and the second remount
+      // of home would stop the show
+      if (!(await this._until(() => app.router.current && app.router.current.path === '/', token, 30))) return;
     }
-    this.expected = route;
+    if (!(await this._roomView(token))) return;
+    this.expected = '/';
     const run = await app.runExperience(st.show);
     if (!run || token !== this.token) return;
     run.showcase = true;
@@ -261,7 +258,7 @@ export class Showcase {
       f.thanks ? h('div', { class: 'sc-thanks' }, f.thanks) : null,
       h('div', { class: 'row' },
         h('button', { class: 'btn', onclick: () => this.start(), 'data-key': 'sc:again' }, icon('refresh'), 'Watch again'),
-        h('button', { class: 'btn', onclick: () => { close(); app.router.go('/demos'); }, 'data-key': 'sc:shows' }, icon('surround'), 'Original Shows'),
+        h('button', { class: 'btn', onclick: () => { close(); app.router.go('/movies'); }, 'data-key': 'sc:movies' }, icon('film'), 'Movie Scenes'),
         h('button', { class: 'btn btn-primary', onclick: close, 'data-key': 'sc:close' }, icon('check'), 'Back to the room'))));
     this.card.hidden = false;
     app.emit('showcase', false);

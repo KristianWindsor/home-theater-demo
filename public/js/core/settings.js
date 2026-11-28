@@ -7,7 +7,7 @@ export const DEFAULTS = {
   volume: 1,
   fxLevel: 0.5,            // speaker clicks, Channel Check, Subwoofer Sweep, test tones (0..1)
   speakerSounds: 'enhanced', // clicking a speaker: enhanced (the files in media/sounds, when there are any) | original
-  showLevel: 1,            // the shows: composed experiences, Orbit, Thunderstorm (1 = as composed)
+  showLevel: 1,            // the Sound check level: Awakening, Orbit (1 = as composed)
   quality: 'auto',         // auto | native | high | medium | low (see gl/resolution.js)
   perfOverlay: false,      // resolution, frame times, dropped video frames on top of everything
   trip: 1,                 // visual intensity (0.5 .. 1.5)

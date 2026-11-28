@@ -1,6 +1,6 @@
 // Transport for the composed shows: previous chapter, play/pause, next chapter, restart, and a timeline with the
 // chapters marked that you can click or drag along (a click near a mark lands on that chapter's start).
-// Used by the full-screen shows (screens/experience.js) and by the room shows' pill on the home screen.
+// Used by the room shows' pill on the home screen.
 import { h, icon, fmtTime } from '../core/dom.js';
 
 export function showTransport() {

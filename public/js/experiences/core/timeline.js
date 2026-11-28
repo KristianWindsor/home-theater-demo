@@ -161,6 +161,7 @@ export class Score {
     this.events = [];
     this.chapters = [];
     this.marks = {};
+    this.callouts = [];
   }
 
   add(ev) {
@@ -176,10 +177,16 @@ export class Score {
     this.marks[name] = t;
   }
 
+  /** Name a speaker on screen from t for dur seconds (a room piece: the label floats over that speaker in the 3D room). */
+  callout(t, role, text, dur = 2.4) {
+    this.callouts.push({ t, role, text, dur });
+  }
+
   /** Sort and index; call once after composing. */
   done() {
     this.events.sort((a, b) => a.t - b.t);
     this.chapters.sort((a, b) => a.t - b.t);
+    this.callouts.sort((a, b) => a.t - b.t);
     return this;
   }
 

@@ -1,4 +1,4 @@
-// Hash router: #/movies, #/movie/<id>, #/play/<id>?t=..., #/music, #/viz/<id>, #/demos, #/trailers, #/settings
+// Hash router: #/movies, #/movie/<id>, #/play/<id>?t=..., #/music, #/viz/<id>, #/soundcheck, #/trailers, #/settings
 // Each screen module exports { mount(root, params, query) -> { unmount?, onKey? } }.
 // It remembers where you were on each screen (scroll positions, the focused tile) and puts you back there when you
 // return, so coming back from a show or a scene lands on the tile you started it from.

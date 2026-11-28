@@ -8,7 +8,7 @@
 //   * tap the music for the visualizer's live FFT
 //
 //   music ──────────────────────────────────────────────┐
-//   shows (experiences; Orbit, Thunderstorm)  ── show bus ┼─► master (Volume) ─► output
+//   shows (Awakening, Orbit) ───────────────── show bus ┼─► master (Volume) ─► output
 //   speaker clicks, tests ─────────────────────── fx bus ─┘
 
 // Chrome/Windows channel order for multichannel output devices
@@ -71,7 +71,7 @@ export class AudioEngine {
     // level buses: each has a per-speaker merger and one gain, so a level change is one smooth ramp
     this.buses = {
       fx: this._bus(this.settings.fxLevel ?? 0.5),     // speaker clicks, Channel Check, Subwoofer Sweep, test tones
-      show: this._bus(this.settings.showLevel ?? 1),   // the composed experiences, Orbit, Thunderstorm
+      show: this._bus(this.settings.showLevel ?? 1),   // Awakening and Orbit (Sound check level)
     };
     /** Where an experience's rendered channels go (already one channel per output). */
     this.showInput = this.buses.show.gain;
