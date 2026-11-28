@@ -8,11 +8,7 @@
       "or": [
         { "show": "cold-start", "from": 0, "to": 75, "title": "Cold Start", "line": "A V10 wakes up · a KW5.1 Original" }
       ] },
-    { "song": "Animal Collective/My Girls.flac", "start": 177.5, "end": 223.4, "video": true, "title": "My Girls", "line": "Animal Collective · the music video",
-      "or": [
-        { "show": "glass-orchard", "from": 0, "to": 70, "title": "Glass Orchard", "line": "A glass tree, grown note by note · a KW5.1 Original" }
-      ] },
-    { "song": "Mannheim_Steamroller_-_A_Fresh_Aire_Christmas_-_10_-_Carol_Of_The_Bells.flac", "start": 128, "end": 180, "title": "Carol of the Bells", "line": "Mannheim Steamroller · choreographed by the visualizer" },
+    { "song": "Mannheim_Steamroller_-_A_Fresh_Aire_Christmas_-_10_-_Carol_Of_The_Bells.flac", "start": 0, "end": 52.07, "title": "Carol of the Bells", "line": "Mannheim Steamroller · choreographed by the visualizer" },
     { "show": "the-passenger", "to": 62, "title": "The Passenger", "line": "A cat takes the empty seat · a KW5.1 Original" }
   ],
   "finale": { "title": "KW5.1", "line": "A Windsor home theater showcase", "thanks": "Thanks for watching" }
